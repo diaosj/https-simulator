@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock, FileWarning, ShieldCheck, AlertOctagon, Globe } from 'lucide-react'
+import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock, FileWarning, ShieldCheck, AlertOctagon, Globe, ArrowDown } from 'lucide-react'
 import CryptoJS from 'crypto-js'
 import { translations, type Locale } from './i18n'
 
@@ -38,6 +38,20 @@ function App() {
   const [serverAlert, setServerAlert] = useState(false)
   const [authStep, setAuthStep] = useState(0)
   const [clientAlertFlash, setClientAlertFlash] = useState(false)
+
+  const [isMobile, setIsMobile] = useState(false)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const clientRef = useRef<HTMLDivElement>(null)
+  const hackerRef = useRef<HTMLDivElement>(null)
+  const serverRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 639px)')
+    setIsMobile(mql.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
 
   const resetSimulation = useCallback(() => {
     setPacket(null)
@@ -390,7 +404,34 @@ function App() {
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
+  const getMobileOffsets = useCallback(() => {
+    const clientEl = clientRef.current
+    const hackerEl = hackerRef.current
+    const serverEl = serverRef.current
+    if (!clientEl || !hackerEl || !serverEl) {
+      return { centerY: 400, serverY: 800 }
+    }
+    const clientMid = clientEl.offsetTop + clientEl.offsetHeight / 2
+    const hackerMid = hackerEl.offsetTop + hackerEl.offsetHeight / 2
+    const serverMid = serverEl.offsetTop + serverEl.offsetHeight / 2
+    return {
+      centerY: hackerMid - clientMid,
+      serverY: serverMid - clientMid,
+    }
+  }, [])
+
   const getPacketPosition = (position: 'client' | 'center' | 'server') => {
+    if (isMobile) {
+      const { centerY, serverY } = getMobileOffsets()
+      switch (position) {
+        case 'client':
+          return { x: 0, y: 0 }
+        case 'center':
+          return { x: 0, y: centerY }
+        case 'server':
+          return { x: 0, y: serverY }
+      }
+    }
     switch (position) {
       case 'client':
         return { x: 0, y: 0 }
@@ -524,10 +565,9 @@ function App() {
 
       {/* Stage */}
       <main className="max-w-7xl mx-auto p-3 sm:p-6">
-        <div className="overflow-x-auto">
-        <div className="min-w-[700px] grid grid-cols-3 gap-3 sm:gap-6 relative">
+        <div ref={stageRef} className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 relative">
           {/* Client */}
-          <div className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
+          <div ref={clientRef} className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
             clientAlertFlash
               ? 'border-2 border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] client-alert-flash'
               : mode === 'https'
@@ -666,8 +706,15 @@ function App() {
             </div>
           </div>
 
+          {/* Arrow connector: Client → Hacker (mobile only) */}
+          {isMobile && (
+            <div className="flex justify-center -my-1">
+              <ArrowDown className="w-6 h-6 text-slate-500" />
+            </div>
+          )}
+
           {/* Center - Hacker (Terminal Style) */}
-          <div className={`bg-black rounded-xl p-0 relative overflow-hidden transition-all duration-300 ${
+          <div ref={hackerRef} className={`bg-black rounded-xl p-0 relative overflow-hidden transition-all duration-300 ${
             isHackerActive
               ? 'border border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]'
               : 'border border-slate-700'
@@ -758,8 +805,15 @@ function App() {
             </div>
           </div>
 
+          {/* Arrow connector: Hacker → Server (mobile only) */}
+          {isMobile && (
+            <div className="flex justify-center -my-1">
+              <ArrowDown className="w-6 h-6 text-slate-500" />
+            </div>
+          )}
+
           {/* Server */}
-          <div className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
+          <div ref={serverRef} className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
             serverAlert
               ? 'border-2 border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] server-alert-flash'
               : mode === 'https'
@@ -818,7 +872,7 @@ function App() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
-                className="absolute top-[20%] right-[4%] z-50 flex flex-col gap-2"
+                className={`absolute z-50 flex flex-col gap-2 ${isMobile ? 'bottom-[4%] right-[4%]' : 'top-[20%] right-[4%]'}`}
               >
                 <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
                   <Key className="w-5 h-5" />
@@ -839,7 +893,7 @@ function App() {
                   key="step2-private-key"
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 1 }}
-                  className="absolute top-[20%] right-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'bottom-[4%] right-[4%]' : 'top-[20%] right-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -849,11 +903,11 @@ function App() {
                 {/* Public Key flies to Client */}
                 <motion.div
                   key="step2-public-key-fly"
-                  initial={{ x: '68%', y: 0, opacity: 1 }}
-                  animate={{ x: '2%', y: 0, opacity: 1 }}
+                  initial={isMobile ? { x: 0, y: '68%', opacity: 1 } : { x: '68%', y: 0, opacity: 1 }}
+                  animate={isMobile ? { x: 0, y: '2%', opacity: 1 } : { x: '2%', y: 0, opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 1.8, ease: 'easeInOut' }}
-                  className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+                  className={`absolute z-50 ${isMobile ? 'top-0 left-[10%]' : 'top-1/2 left-0 -translate-y-1/2'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -869,7 +923,7 @@ function App() {
                 {/* Private Key stays at Server */}
                 <motion.div
                   key="step3-private-key"
-                  className="absolute top-[20%] right-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'bottom-[4%] right-[4%]' : 'top-[20%] right-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -881,7 +935,7 @@ function App() {
                   key="step3-public-key"
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 1 }}
-                  className="absolute top-[20%] left-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'top-[2%] left-[4%]' : 'top-[20%] left-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -894,7 +948,7 @@ function App() {
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.8, delay: 0.6, ease: 'backOut' }}
-                  className="absolute top-[35%] left-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'top-[6%] left-[4%]' : 'top-[35%] left-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-green-500 text-white shadow-2xl shadow-green-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -910,7 +964,7 @@ function App() {
                 {/* Private Key stays at Server */}
                 <motion.div
                   key="step4-private-key"
-                  className="absolute top-[20%] right-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'bottom-[4%] right-[4%]' : 'top-[20%] right-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -923,7 +977,7 @@ function App() {
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 0, scale: 0.5 }}
                   transition={{ duration: 0.6 }}
-                  className="absolute top-[35%] left-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'top-[6%] left-[4%]' : 'top-[35%] left-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-green-500 text-white shadow-2xl shadow-green-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -935,7 +989,7 @@ function App() {
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 0, scale: 0.5 }}
                   transition={{ duration: 0.6 }}
-                  className="absolute top-[20%] left-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'top-[2%] left-[4%]' : 'top-[20%] left-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -948,7 +1002,7 @@ function App() {
                   initial={{ opacity: 0, scale: 0.3 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.8, delay: 0.5, ease: 'backOut' }}
-                  className="absolute top-[25%] left-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'top-[3%] left-[4%]' : 'top-[25%] left-[4%]'}`}
                 >
                   <div className="relative px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
                     <div className="flex items-center gap-2">
@@ -972,7 +1026,7 @@ function App() {
                 {/* Private Key stays at Server */}
                 <motion.div
                   key="step5-private-key"
-                  className="absolute top-[20%] right-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'bottom-[4%] right-[4%]' : 'top-[20%] right-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -982,10 +1036,10 @@ function App() {
                 {/* Box flies to center then pauses */}
                 <motion.div
                   key="step5-box"
-                  initial={{ x: '2%', y: 0, opacity: 1 }}
-                  animate={{ x: '35%', y: 0, opacity: 1 }}
+                  initial={isMobile ? { x: 0, y: '2%', opacity: 1 } : { x: '2%', y: 0, opacity: 1 }}
+                  animate={isMobile ? { x: 0, y: '35%', opacity: 1 } : { x: '35%', y: 0, opacity: 1 }}
                   transition={{ duration: 1.0, ease: 'easeOut' }}
-                  className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+                  className={`absolute z-50 ${isMobile ? 'top-0 left-[10%]' : 'top-1/2 left-0 -translate-y-1/2'}`}
                 >
                   <div className="relative px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
                     <div className="flex items-center gap-2">
@@ -1010,7 +1064,7 @@ function App() {
                   key="step6-private-key"
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 1 }}
-                  className="absolute top-[20%] right-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'bottom-[4%] right-[4%]' : 'top-[20%] right-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -1020,10 +1074,10 @@ function App() {
                 {/* Box flies to Server then disappears */}
                 <motion.div
                   key="step6-box"
-                  initial={{ x: '35%', y: 0, opacity: 1 }}
-                  animate={{ x: '68%', y: 0, opacity: 0, scale: 0.5 }}
+                  initial={isMobile ? { x: 0, y: '35%', opacity: 1 } : { x: '35%', y: 0, opacity: 1 }}
+                  animate={isMobile ? { x: 0, y: '68%', opacity: 0, scale: 0.5 } : { x: '68%', y: 0, opacity: 0, scale: 0.5 }}
                   transition={{ duration: 1.2, ease: 'easeInOut' }}
-                  className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+                  className={`absolute z-50 ${isMobile ? 'top-0 left-[10%]' : 'top-1/2 left-0 -translate-y-1/2'}`}
                 >
                   <div className="relative px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
                     <div className="flex items-center gap-2">
@@ -1043,7 +1097,7 @@ function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.0, duration: 0.5 }}
-                  className="absolute top-[38%] right-[8%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'bottom-[8%] right-[8%]' : 'top-[38%] right-[8%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-red-900/60 border border-red-400 text-white flex items-center gap-2">
                     <Unlock className="w-5 h-5 text-red-400" />
@@ -1056,7 +1110,7 @@ function App() {
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 1.5, duration: 0.6, ease: 'backOut' }}
-                  className="absolute top-[50%] right-[4%] z-50"
+                  className={`absolute z-50 ${isMobile ? 'bottom-[12%] right-[4%]' : 'top-[50%] right-[4%]'}`}
                 >
                   <div className="px-4 py-2 rounded-lg bg-green-500 text-white shadow-2xl shadow-green-500/50 flex items-center gap-2">
                     <Key className="w-5 h-5" />
@@ -1070,10 +1124,10 @@ function App() {
             {scenario === 'authentication' && authStep === 1 && (
               <motion.div
                 key="auth-fake-cert"
-                initial={{ x: '35%', y: 0, opacity: 1 }}
-                animate={{ x: '2%', y: 0, opacity: 1 }}
+                initial={isMobile ? { x: 0, y: '35%', opacity: 1 } : { x: '35%', y: 0, opacity: 1 }}
+                animate={isMobile ? { x: 0, y: '2%', opacity: 1 } : { x: '2%', y: 0, opacity: 1 }}
                 transition={{ duration: 1.8, ease: 'easeInOut' }}
-                className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+                className={`absolute z-50 ${isMobile ? 'top-0 left-[10%]' : 'top-1/2 left-0 -translate-y-1/2'}`}
               >
                 <div className="px-4 py-3 rounded-lg bg-red-700 text-white shadow-2xl shadow-red-500/50 border-2 border-red-400">
                   <div className="flex items-center gap-2">
@@ -1096,7 +1150,8 @@ function App() {
                 initial={getPacketPosition('client')}
                 animate={getPacketPosition(packet.position)}
                 transition={{ duration: 0.8, ease: 'easeInOut' }}
-                className="absolute top-1/2 left-[12%] z-50"
+                className={`absolute z-50 ${isMobile ? 'left-[10%]' : 'top-1/2 left-[12%]'}`}
+                style={isMobile ? { top: (clientRef.current?.offsetTop ?? 0) + (clientRef.current?.offsetHeight ?? 0) / 2 } : undefined}
               >
                 {/* Integrity HTTPS: cipher box with shield */}
                 {scenario === 'integrity' && mode === 'https' ? (
@@ -1147,7 +1202,6 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
         </div>
 
         {/* Legend */}
