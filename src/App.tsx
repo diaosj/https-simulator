@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi } from 'lucide-react'
+import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, FileText, BookOpen, Unlock } from 'lucide-react'
 import CryptoJS from 'crypto-js'
 
 type Scenario = 'encryption' | 'integrity' | 'authentication'
@@ -52,17 +52,17 @@ function App() {
 
   const scenarioData = {
     encryption: {
-      title: '🔐 加密 (防监听)',
+      title: '加密 (防监听)',
       description: '演示数据加密如何保护隐私',
       placeholder: '我的密码是123456',
     },
     integrity: {
-      title: '🛡️ 完整性 (防篡改)',
+      title: '完整性 (防篡改)',
       description: '演示Hash如何检测数据被篡改',
       placeholder: '转账给张三 100元',
     },
     authentication: {
-      title: '✅ 验证 (防伪造)',
+      title: '验证 (防伪造)',
       description: '演示证书如何验证服务器身份',
       placeholder: '我的银行账号',
     },
@@ -113,11 +113,11 @@ function App() {
 
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
-      setCenterMessage(`😈 截获明文: "${inputText}"`)
+      setCenterMessage(`截获明文: "${inputText}"`)
 
       await sleep(1000)
       setPacket({ ...newPacket, position: 'server' })
-      setServerMessage(`✅ 收到数据: "${inputText}"`)
+      setServerMessage(`收到数据: "${inputText}"`)
 
       await sleep(1000)
       setPacket(null)
@@ -134,12 +134,12 @@ function App() {
 
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
-      setCenterMessage(`🤬 只能看到乱码，无法解密！`)
+      setCenterMessage(`只能看到乱码，无法解密！`)
 
       await sleep(1000)
       setPacket({ ...newPacket, position: 'server' })
       const decrypted = decryptData(encrypted)
-      setServerMessage(`✅ 解密成功: "${decrypted}"`)
+      setServerMessage(`解密成功: "${decrypted}"`)
 
       await sleep(1000)
       setPacket(null)
@@ -160,11 +160,11 @@ function App() {
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
       const tamperedContent = inputText.replace('张三', '黑客').replace('100', '10000')
-      setCenterMessage(`😈 篡改数据: "${tamperedContent}"`)
+      setCenterMessage(`篡改数据: "${tamperedContent}"`)
 
       await sleep(1000)
       setPacket({ ...newPacket, content: tamperedContent, tampered: true, position: 'server' })
-      setServerMessage(`❌ 执行被篡改的指令: "${tamperedContent}"`)
+      setServerMessage(`执行被篡改的指令: "${tamperedContent}"`)
 
       await sleep(1000)
       setPacket(null)
@@ -182,14 +182,14 @@ function App() {
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
       const tamperedContent = inputText.replace('张三', '黑客').replace('100', '10000')
-      setCenterMessage(`😈 尝试篡改: "${tamperedContent}"`)
+      setCenterMessage(`尝试篡改: "${tamperedContent}"`)
 
       await sleep(1000)
       setPacket({ ...newPacket, content: tamperedContent, tampered: true, position: 'server' })
       const newHash = calculateHash(tamperedContent)
       const isValid = newHash === hash
       setServerMessage(
-        `🔍 Hash校验: ${isValid ? '✅ 通过' : '❌ 失败'}\n原始Hash: ${hash.substring(0, 16)}...\n当前Hash: ${newHash.substring(0, 16)}...\n🚫 拒收数据包！`
+        `Hash校验: ${isValid ? '通过' : '失败'}\n原始Hash: ${hash.substring(0, 16)}...\n当前Hash: ${newHash.substring(0, 16)}...\n拒收数据包！`
       )
 
       await sleep(1500)
@@ -201,7 +201,7 @@ function App() {
   const handleAuthenticationScenario = async () => {
     if (mode === 'http') {
       // HTTP: hacker can pretend to be server
-      setCenterMessage(`🎭 我是真服务器！(假冒)`)
+      setCenterMessage(`我是真服务器！(假冒)`)
       await sleep(500)
 
       const newPacket: Packet = {
@@ -213,21 +213,21 @@ function App() {
 
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
-      setCenterMessage(`😈 成功截获所有数据: "${inputText}"`)
-      setServerMessage(`😴 服务器未收到任何数据`)
+      setCenterMessage(`成功截获所有数据: "${inputText}"`)
+      setServerMessage(`服务器未收到任何数据`)
 
       await sleep(1500)
       setPacket(null)
     } else {
       // HTTPS: certificate validation
       setShowCertError(true)
-      setCenterMessage(`🚫 无法提供合法CA证书`)
-      setServerMessage(`⏳ 等待连接...`)
+      setCenterMessage(`无法提供合法CA证书`)
+      setServerMessage(`等待连接...`)
 
       await sleep(1500)
       setShowCertError(false)
-      setCenterMessage(`🤬 连接被客户端拦截`)
-      setServerMessage(`😴 服务器未收到任何数据`)
+      setCenterMessage(`连接被客户端拦截`)
+      setServerMessage(`服务器未收到任何数据`)
 
       await sleep(1500)
     }
@@ -282,10 +282,10 @@ function App() {
                 }`}
               />
               <span className="absolute left-2 text-white font-bold text-sm">
-                {mode === 'http' ? '🔴 HTTP' : ''}
+                {mode === 'http' ? 'HTTP' : ''}
               </span>
               <span className="absolute right-2 text-white font-bold text-sm">
-                {mode === 'https' ? '🟢 HTTPS' : ''}
+                {mode === 'https' ? 'HTTPS' : ''}
               </span>
             </button>
           </div>
@@ -355,7 +355,7 @@ function App() {
           }`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-2xl">💻</span>
+                <Monitor className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h3 className="font-bold text-lg text-slate-100">客户端</h3>
@@ -365,7 +365,7 @@ function App() {
 
             {handshakeStatus === 'completed' && (
               <div className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center">
-                <span className="text-green-400 font-bold text-sm">🟢 安全通道已建立: AES-GCM</span>
+                <span className="text-green-400 font-bold text-sm flex items-center justify-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> 安全通道已建立: AES-GCM</span>
               </div>
             )}
 
@@ -395,7 +395,11 @@ function App() {
                     : 'bg-cyan-600 text-white hover:bg-cyan-500 active:scale-95 shadow-lg shadow-cyan-500/20'
                 }`}
               >
-                {handshakeStatus === 'in_progress' ? '🔒 握手中...' : isAnimating ? '发送中...' : '📤 发送'}
+                {handshakeStatus === 'in_progress' ? (
+                  <><Lock className="inline-block w-4 h-4 mr-1" /> 握手中...</>
+                ) : isAnimating ? '发送中...' : (
+                  <><Send className="inline-block w-4 h-4 mr-1" /> 发送</>
+                )}
               </button>
 
               {mode === 'https' && scenario === 'integrity' && (
@@ -464,7 +468,7 @@ function App() {
           }`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🏦</span>
+                <Server className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h3 className="font-bold text-lg text-slate-100">服务器</h3>
@@ -474,16 +478,16 @@ function App() {
 
             {handshakeStatus === 'completed' && (
               <div className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center">
-                <span className="text-green-400 font-bold text-sm">🟢 安全通道已建立: AES-GCM</span>
+                <span className="text-green-400 font-bold text-sm flex items-center justify-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> 安全通道已建立: AES-GCM</span>
               </div>
             )}
 
             <div className="min-h-[200px] flex items-center justify-center">
               {serverMessage ? (
                 <div className={`p-4 rounded-lg ${
-                  serverMessage.includes('❌') || serverMessage.includes('🚫')
+                  serverMessage.includes('被篡改') || serverMessage.includes('拒收') || serverMessage.includes('失败')
                     ? 'bg-red-900/30 border border-red-500/60'
-                    : serverMessage.includes('😴')
+                    : serverMessage.includes('未收到') || serverMessage.includes('等待连接')
                     ? 'bg-slate-800 border border-slate-600'
                     : 'bg-green-900/30 border border-green-500/60'
                 }`}>
@@ -510,7 +514,7 @@ function App() {
                 className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
               >
                 <div className="px-5 py-3 rounded-lg bg-yellow-600 text-white shadow-2xl shadow-yellow-500/50">
-                  <div className="font-bold text-sm mb-1">📜 公钥 (Public Key)</div>
+                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><FileText className="w-4 h-4" /> 公钥 (Public Key)</div>
                   <div className="text-xs">Server → Client</div>
                 </div>
               </motion.div>
@@ -526,7 +530,7 @@ function App() {
                 className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
               >
                 <div className="px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
-                  <div className="font-bold text-sm mb-1">🔒 🔑 会话密钥 (Session Key)</div>
+                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><Lock className="w-4 h-4" /> <Key className="w-4 h-4" /> 会话密钥 (Session Key)</div>
                   <div className="text-xs">公钥加密 → Client → Server</div>
                 </div>
               </motion.div>
@@ -542,8 +546,8 @@ function App() {
                 className="absolute top-1/2 right-[8%] z-50 -translate-y-1/2"
               >
                 <div className="px-5 py-3 rounded-lg bg-green-600 text-white shadow-2xl shadow-green-500/50">
-                  <div className="font-bold text-sm mb-1">🟥 私钥解密</div>
-                  <div className="text-xs">🔑 会话密钥已提取</div>
+                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><Unlock className="w-4 h-4" /> 私钥解密</div>
+                  <div className="text-xs flex items-center gap-1"><Key className="w-3 h-3" /> 会话密钥已提取</div>
                 </div>
               </motion.div>
             )}
@@ -566,13 +570,13 @@ function App() {
                     ? 'bg-purple-600 text-white shadow-purple-500/50'
                     : 'bg-blue-600 text-white shadow-blue-500/50'
                 }`}>
-                  <div className="font-bold text-sm mb-1">📦 数据包</div>
+                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><Package className="w-4 h-4" /> 数据包</div>
                   <div className="text-xs font-mono break-all max-w-[150px]">
                     {packet.encrypted ? packet.content.substring(0, 30) + '...' : packet.content}
                   </div>
                   {packet.hash && (
-                    <div className="mt-2 text-xs">
-                      🔒 Hash: {packet.hash.substring(0, 8)}...
+                    <div className="mt-2 text-xs flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Hash: {packet.hash.substring(0, 8)}...
                     </div>
                   )}
                 </div>
@@ -583,24 +587,24 @@ function App() {
 
         {/* Legend */}
         <div className="mt-8 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-xl shadow-lg p-6">
-          <h3 className="font-bold text-lg mb-4 text-slate-100">📚 说明</h3>
+          <h3 className="font-bold text-lg mb-4 text-slate-100 flex items-center gap-2"><BookOpen className="w-5 h-5" /> 说明</h3>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <h4 className="font-semibold text-cyan-400 mb-2">🔐 场景 1: 加密</h4>
+              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Lock className="w-4 h-4" /> 场景 1: 加密</h4>
               <p className="text-slate-400">
                 <strong className="text-slate-300">HTTP:</strong> 明文传输，黑客能看到所有内容<br />
                 <strong className="text-slate-300">HTTPS:</strong> AES加密，黑客只能看到乱码
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-cyan-400 mb-2">🛡️ 场景 2: 完整性</h4>
+              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Shield className="w-4 h-4" /> 场景 2: 完整性</h4>
               <p className="text-slate-400">
                 <strong className="text-slate-300">HTTP:</strong> 数据可被篡改，服务器无法察觉<br />
                 <strong className="text-slate-300">HTTPS:</strong> SHA-256 Hash校验，篡改立即被发现
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-cyan-400 mb-2">✅ 场景 3: 验证</h4>
+              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> 场景 3: 验证</h4>
               <p className="text-slate-400">
                 <strong className="text-slate-300">HTTP:</strong> 黑客可假冒服务器截获数据<br />
                 <strong className="text-slate-300">HTTPS:</strong> CA证书验证，假冒立即被识破
