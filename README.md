@@ -1,9 +1,13 @@
 <p align="center">
-  <h1 align="center">🔐 HTTPS 安全演示沙盒<br/><sub>HTTPS Visual Simulator</sub></h1>
+  <h1 align="center">HTTPS Visual Simulator</h1>
 </p>
 
 <p align="center">
-  <strong>一个纯前端交互式密码学教学动画沙盒 —— 赛博朋克风格，硬核演绎 HTTPS 底层原理</strong>
+  <strong>A purely front-end, interactive cryptography teaching sandbox with a cyberpunk aesthetic — visually demonstrating the inner workings of HTTPS</strong>
+</p>
+
+<p align="center">
+  <a href="./README.zh-CN.md">中文文档</a>
 </p>
 
 <p align="center">
@@ -17,133 +21,131 @@
 
 ---
 
-## 📖 项目简介
+## About
 
-> **"如果你无法简单地解释它，那你就没有真正理解它。"** —— 理查德·费曼
+> **"If you can't explain it simply, you don't understand it well enough."** — Richard Feynman
 
-**HTTPS Visual Simulator** 是一个**纯前端交互式动画沙盒**，采用**赛博朋克 / 黑客终端**的暗黑视觉风格。它的使命是将晦涩难懂的 HTTPS 底层密码学原理——**CIA 三要素（机密性、完整性、身份验证）**、**TLS 握手协议**、**RSA/AES 混合加密体系**——通过**极其直观的逐帧动画分镜**，展现出来。
+**HTTPS Visual Simulator** is a **purely front-end, interactive animation sandbox** with a **cyberpunk / hacker-terminal** dark visual style. Its mission is to demystify the underlying cryptographic principles of HTTPS — **Confidentiality, Integrity, and Authentication**, the **TLS handshake protocol**, and the **RSA/AES hybrid encryption scheme** — through **highly intuitive, frame-by-frame animated sequences**.
 
-无需后端，无需部署，打开浏览器即可体验一场关于**信息安全攻防**的视觉盛宴。你将亲眼看到中间人（MITM）如何发起攻击，又是如何被现代密码学机制逐一击溃。
+No backend required, no deployment needed — just open your browser and experience a visual showcase of **information security attack and defense**. Watch firsthand how a Man-in-the-Middle (MITM) launches attacks, and how modern cryptographic mechanisms defeat them one by one.
 
 <p align="center">
-  <!-- 👇 请在此处放置项目演示动图（GIF / 视频截图） -->
-  <img src="" alt="HTTPS Visual Simulator 演示动图" width="800" />
-  <br/>
-  <em>📸 请在此处放置演示动图 (GIF) 或截图</em>
+  <!-- Place a project demo GIF / video screenshot here. Update the path below once an asset is available. -->
+  <!-- <img src="path/to/demo.gif" alt="HTTPS Visual Simulator Demo" width="800" /> -->
 </p>
 
 ---
 
-## 🎯 核心演示场景
+## Core Demo Scenarios
 
-本项目涵盖 **4 个硬核密码学教学场景**，完整还原 HTTPS 保护数据的全过程：
+This project covers **4 in-depth cryptography teaching scenarios**, fully illustrating how HTTPS protects data:
 
-### 🤝 TLS 握手（RSA 交换 AES 会话密钥）
+### TLS Handshake (RSA Key Exchange for AES Session Key)
 
-> 一切安全通信的起点 —— 密钥协商。
+> The starting point of all secure communication — key negotiation.
 
-演示了完整的 **TLS 握手七步流程**：
+Demonstrates the complete **7-step TLS handshake process**:
 
-1. **Server** 亮出自己的 🟡 公钥（Public Key）与 🔴 私钥（Private Key）。
-2. 🟡 公钥通过网络传输至 **Client**，途经中间人的监听节点。
-3. **Client** 使用公钥生成 🟢 会话密钥（Session Key）。
-4. 会话密钥被封装进紫色加密盒子，用公钥上锁。
-5. 加密盒子飞向 **Server**，中间人截获后尝试解密 —— **失败**。黑客终端闪烁：
+1. The **Server** owns an asymmetric key pair: a **Public Key** (shared via a certificate) and a **Private Key** (kept secret on the server and never transmitted). The animation visualizes both keys for educational purposes.
+2. The **Server** sends its certificate containing the Public Key over the network to the **Client**, passing through the MITM's interception node.
+3. The **Client** generates a Session Key using the Public Key.
+4. The Session Key is encapsulated in an encrypted box, locked with the Public Key.
+5. The encrypted box travels to the **Server**. The MITM intercepts it and attempts to decrypt — **failure**. The hacker terminal flashes:
    ```
    > Intercepting payload...
    > Attempting to decrypt...
-   > Error: Missing Server Private Key. Decryption FAILED.
+   > Error: Server private key is not accessible to attacker. Decryption FAILED.
    ```
-6. **Server** 用 🔴 私钥解锁盒子，取出 🟢 会话密钥。
-7. 双方建立 **安全加密信道**，后续通信全部使用 AES 对称加密。
+6. The **Server** unlocks the box with its Private Key and retrieves the Session Key.
+7. Both parties establish a **secure encrypted channel**; all subsequent communication uses AES symmetric encryption.
 
 ---
 
-### 🔒 场景一：机密性（防监听）
+### Scenario 1: Confidentiality (Preventing Eavesdropping)
 
-> **明文 vs AES-GCM 密文 —— 中间人截获了，但读不懂。**
+> **Plaintext vs. AES ciphertext — the MITM intercepts the data but cannot read it.**
 
-| 模式 | 传输内容 | 中间人看到的 |
+| Mode | Transmitted Content | What the MITM Sees |
 |:---:|:---:|:---:|
-| HTTP | `"转账给张三100元"` | `"转账给张三100元"` ⚠️ 完全可读 |
-| HTTPS | `U2FsdGVkX1...` (AES 密文) | `U2FsdGVkX1...` 🔒 不可读乱码 |
+| HTTP | `"Transfer $100 to Alice"` | `"Transfer $100 to Alice"` — Fully readable |
+| HTTPS | `U2FsdGVkX1...` (AES ciphertext) | `U2FsdGVkX1...` — Unreadable ciphertext |
 
-在 HTTP 模式下，中间人像读报纸一样轻松获取你的明文数据。切换到 HTTPS 后，即使截获数据包，看到的也只是一堆**经过 AES 加密的不可读密文**。机密性，就是让窃听者"看得见，读不懂"。
-
----
-
-### 🛡️ 场景二：完整性（防篡改）
-
-> **这是本项目的硬核亮点 —— "加密 ≠ 防篡改"。**
-
-许多人误以为数据加密后就万事大吉。本场景深入演示了一个反直觉的事实：**黑客无需解密，也能破坏你的数据**。
-
-**攻击演示：比特翻转攻击（Bit-Flipping Attack）**
-
-1. Client 发送 AES 加密后的密文与 **SHA-256 哈希校验值**。
-2. 中间人截获密文后，**盲目翻转部分比特位** —— 密文被"污染"。
-3. 篡改后的密文到达 Server，Server 解密后得到乱码。
-4. Server 重新计算哈希并与原始校验值比对 —— **不匹配！**
-5. Server 立即 **丢弃该数据包**，弹出红色告警：
-   ```
-   ⚠️ 完整性校验失败！数据已被篡改，连接已终止。
-   ```
-
-这就是 **MAC（消息认证码）** 机制的威力：确保数据"一个比特都不能改"。
+In HTTP mode, the MITM reads your plaintext data as easily as reading a newspaper. After switching to HTTPS, even if the data packets are intercepted, the attacker sees nothing but **unreadable AES-encrypted ciphertext**. Confidentiality means the eavesdropper "can see it, but can't read it."
 
 ---
 
-### 📜 场景三：身份验证（防伪造）
+### Scenario 2: Integrity (Preventing Tampering)
 
-> **中间人举着假证书，被浏览器当场识破。**
+> **A key highlight of this project — "Encryption does NOT equal tamper-proofing."**
 
-| 模式 | 服务器身份 | 验证结果 |
+Many people mistakenly assume that data is safe once it's encrypted. This scenario demonstrates a counterintuitive fact: **an attacker can corrupt your data without ever decrypting it**.
+
+**Attack Demo: Bit-Flipping Attack**
+
+1. The Client sends the AES-encrypted ciphertext along with a **SHA-256 hash** for integrity checking.
+2. The MITM intercepts the ciphertext and **blindly flips some bits** — the ciphertext is now "corrupted."
+3. The tampered ciphertext arrives at the Server, which decrypts it into garbled data.
+4. The Server recomputes the hash and compares it against the original value — **mismatch!**
+5. The Server immediately **drops the packet** and raises a red alert:
+   ```
+   Integrity check failed! Data has been tampered with. Connection terminated.
+   ```
+
+> **Note:** This demo uses a simplified hash-based integrity check for educational purposes. In real-world TLS, integrity is enforced by **HMAC** or **AEAD authentication tags** (e.g., AES-GCM), which use a shared secret key to prevent an attacker from recomputing the tag after tampering.
+
+---
+
+### Scenario 3: Authentication (Preventing Impersonation)
+
+> **The MITM presents a forged certificate and gets caught on the spot by the browser.**
+
+| Mode | Server Identity | Verification Result |
 |:---:|:---:|:---:|
-| HTTP | 无验证机制 | 黑客冒充服务器，用户毫不知情 ⚠️ |
-| HTTPS | CA 签发数字证书 | 假证书被识别，连接立即拦截 🛑 |
+| HTTP | No verification mechanism | Attacker impersonates the server; user is unaware |
+| HTTPS | Digital certificate issued by a CA | Forged certificate is detected; connection is blocked |
 
-在 HTTP 模式下，中间人可以完美伪装成目标服务器，你的所有数据直接送入黑客手中。HTTPS 模式下，浏览器会验证服务器出示的 **CA 数字证书**——中间人无法伪造受信任 CA 的签名，冒充者**当场被拦截**，连接被终止。
+In HTTP mode, the MITM can perfectly impersonate the target server, and all your data goes straight to the attacker. In HTTPS mode, the browser verifies the **CA-issued digital certificate** presented by the server — the MITM cannot forge a signature from a trusted CA, and the impostor is **immediately blocked** and the connection is terminated.
 
 ---
 
-## 🚀 快速开始
+## Getting Started
 
-确保本地已安装 [Node.js](https://nodejs.org/)（v16+）和 npm。
+Make sure [Node.js](https://nodejs.org/) (v16+) and npm are installed locally.
 
 ```bash
-# 1. 克隆项目
+# 1. Clone the repository
 git clone https://github.com/diaosj/https-simulator.git
 
-# 2. 进入项目目录
+# 2. Navigate to the project directory
 cd https-simulator
 
-# 3. 安装依赖
+# 3. Install dependencies
 npm install
 
-# 4. 启动开发服务器
+# 4. Start the development server
 npm run dev
 ```
 
-启动后，在浏览器中打开终端输出的本地地址（默认 `http://localhost:5173`），即可进入 HTTPS 安全演示沙盒。
+After starting, open the local address shown in the terminal (default: `http://localhost:5173`) in your browser to enter the HTTPS Visual Simulator.
 
 ```bash
-# 构建生产版本
+# Build for production
 npm run build
 
-# 预览生产构建
+# Preview the production build
 npm run preview
 ```
 
 ---
 
-## 📄 开源许可
+## License
 
-本项目基于 [MIT License](./LICENSE) 开源。
+This project is licensed under the [MIT License](./LICENSE).
 
 ---
 
 <p align="center">
-  <sub>用代码诠释安全，用动画点亮密码学。</sub>
+  <sub>Explaining security through code, illuminating cryptography through animation.</sub>
   <br/>
   <sub>Built with 🖤 by <a href="https://github.com/diaosj">diaosj</a></sub>
 </p>
