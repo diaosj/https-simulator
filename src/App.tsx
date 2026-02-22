@@ -29,6 +29,8 @@ function App() {
   const [handshakeStep, setHandshakeStep] = useState(0)
   const [hackerLog, setHackerLog] = useState<string[]>([])
   const hackerLogRef = useRef<string[]>([])
+  const [integrityStep, setIntegrityStep] = useState(0)
+  const [serverAlert, setServerAlert] = useState(false)
 
   const TYPEWRITER_CHAR_DELAY_MS = 40
 
@@ -223,31 +225,58 @@ function App() {
       await sleep(1000)
       setPacket(null)
     } else {
-      // HTTPS: integrity check with hash
-      const hash = calculateHash(inputText)
+      // HTTPS: encrypted cipher box + MAC tag → blind bit-flip → hash verify fail → reject
+      const encrypted = encryptData(inputText)
+      const hash = calculateHash(encrypted)
       const newPacket: Packet = {
         id: '1',
-        content: inputText,
+        content: encrypted,
+        encrypted: true,
         hash: hash,
         position: 'client',
       }
+      setIntegrityStep(0)
+      setServerAlert(false)
+      setHackerLog([])
+      hackerLogRef.current = []
       setPacket(newPacket)
 
+      // Step 1: Packet flies to hacker zone
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
-      const tamperedContent = inputText.replace('张三', '黑客').replace('100', '10000')
-      setCenterMessage(`尝试篡改: "${tamperedContent}"`)
+      setIntegrityStep(1)
 
+      // Step 2: Hacker typewriter logs
+      await sleep(400)
+      await typewriterAppend('> 截获加密数据 (AES-GCM)...')
+      await sleep(400)
+      await typewriterAppend('> 无法解密！执行盲目比特翻转攻击 (Bit-Flipping)...')
+      await sleep(300)
+
+      // Step 3: Glitch attack visual — mark packet tampered
+      setIntegrityStep(2)
+      setPacket({ ...newPacket, tampered: true, position: 'center' })
+      await sleep(1200)
+
+      // Step 4: Packet continues to server
+      setPacket({ ...newPacket, tampered: true, position: 'server' })
+      setIntegrityStep(3)
       await sleep(1000)
-      setPacket({ ...newPacket, content: tamperedContent, tampered: true, position: 'server' })
-      const newHash = calculateHash(tamperedContent)
-      const isValid = newHash === hash
+
+      // Step 5: Server verifies MAC → failure
+      setIntegrityStep(4)
+      setServerAlert(true)
+      const newHash = calculateHash(encrypted + '-corrupted')
       setServerMessage(
-        `Hash校验: ${isValid ? '通过' : '失败'}\n原始Hash: ${hash.substring(0, 16)}...\n当前Hash: ${newHash.substring(0, 16)}...\n拒收数据包！`
+        `❌ 完整性校验失败！MAC Tag 不匹配，数据在传输途中被篡改！已丢弃。\n原始MAC: ${hash.substring(0, 16)}...\n当前MAC: ${newHash.substring(0, 16)}...`
       )
 
-      await sleep(1500)
+      await sleep(2000)
       setPacket(null)
+      setIntegrityStep(0)
+      setServerAlert(false)
+      setHackerLog([])
+      hackerLogRef.current = []
     }
     setIsAnimating(false)
   }
@@ -301,7 +330,7 @@ function App() {
     }
   }
 
-  const isHackerActive = centerMessage !== '' && mode === 'http'
+  const isHackerActive = (centerMessage !== '' && mode === 'http') || (integrityStep > 0 && integrityStep < 3)
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-slate-200">
@@ -465,8 +494,8 @@ function App() {
               {mode === 'https' && scenario === 'integrity' && (
                 <div className="mt-4 p-3 bg-green-900/30 border border-green-700 rounded-lg text-xs">
                   <div className="flex items-center gap-2 text-green-400 font-semibold mb-1">
-                    <FileCheck className="w-4 h-4" />
-                    防伪贴 (Hash)
+                    <Shield className="w-4 h-4" />
+                    MAC Tag (Hash/HMAC)
                   </div>
                   <div className="font-mono break-all text-green-400">
                     {calculateHash(inputText).substring(0, 32)}...
@@ -528,6 +557,17 @@ function App() {
                       </div>
                     )}
                   </div>
+                ) : integrityStep >= 1 && integrityStep <= 2 && hackerLog.length > 0 ? (
+                  <div className="p-4 rounded-lg text-left font-mono w-full bg-red-900/30 border-2 border-red-500 animate-pulse">
+                    <div className="space-y-1">
+                      {hackerLog.map((line, i) => (
+                        <p key={i} className="text-sm font-semibold text-green-400">
+                          {line}
+                          {i === hackerLog.length - 1 && <span className="animate-pulse">▊</span>}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
                 ) : centerMessage ? (
                   <div className={`p-4 rounded-lg text-center font-mono ${
                     mode === 'http' ? 'bg-red-900/30 border border-red-500/60' : 'bg-yellow-900/20 border border-yellow-500/40'
@@ -546,7 +586,9 @@ function App() {
 
           {/* Server */}
           <div className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
-            mode === 'https'
+            serverAlert
+              ? 'border-2 border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] server-alert-flash'
+              : mode === 'https'
               ? 'border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
               : 'border border-slate-700'
           }`}>
@@ -861,23 +903,52 @@ function App() {
                 transition={{ duration: 0.8, ease: 'easeInOut' }}
                 className="absolute top-1/2 left-[12%] z-50"
               >
-                <div className={`px-6 py-4 rounded-lg shadow-2xl transform -translate-y-1/2 ${
-                  packet.tampered
-                    ? 'bg-red-600 text-white shadow-red-500/50'
-                    : packet.encrypted
-                    ? 'bg-purple-600 text-white shadow-purple-500/50'
-                    : 'bg-blue-600 text-white shadow-blue-500/50'
-                }`}>
-                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><Package className="w-4 h-4" /> 数据包</div>
-                  <div className="text-xs font-mono break-all max-w-[150px]">
-                    {packet.encrypted ? packet.content.substring(0, 30) + '...' : packet.content}
-                  </div>
-                  {packet.hash && (
-                    <div className="mt-2 text-xs flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> Hash: {packet.hash.substring(0, 8)}...
+                {/* Integrity HTTPS: cipher box with shield */}
+                {scenario === 'integrity' && mode === 'https' ? (
+                  <div className={`relative px-6 py-4 rounded-lg shadow-2xl transform -translate-y-1/2 border-2 ${
+                    packet.tampered
+                      ? 'bg-slate-900 border-red-500 shadow-red-500/50 integrity-glitch'
+                      : 'bg-slate-900 border-green-500 shadow-green-500/30'
+                  }`}>
+                    <div className="font-bold text-sm mb-1 flex items-center gap-1 text-slate-200">
+                      <Package className="w-4 h-4" /> 密码箱
                     </div>
-                  )}
-                </div>
+                    <div className="text-xs font-mono break-all max-w-[150px] text-slate-400">
+                      {packet.content.substring(0, 20)}...
+                    </div>
+                    <div className="mt-1 text-xs flex items-center gap-1 text-green-400">
+                      <Key className="w-3 h-3" /> AES-GCM
+                    </div>
+                    {/* Shield / MAC tag */}
+                    {integrityStep < 4 ? (
+                      <div className="absolute -top-3 -right-3 w-7 h-7 bg-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/50">
+                        <Shield className="w-4 h-4 text-white" />
+                      </div>
+                    ) : (
+                      <div className="absolute -top-3 -right-3 w-7 h-7 bg-slate-600 rounded-full flex items-center justify-center opacity-40">
+                        <Shield className="w-4 h-4 text-slate-400" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`px-6 py-4 rounded-lg shadow-2xl transform -translate-y-1/2 ${
+                    packet.tampered
+                      ? 'bg-red-600 text-white shadow-red-500/50'
+                      : packet.encrypted
+                      ? 'bg-purple-600 text-white shadow-purple-500/50'
+                      : 'bg-blue-600 text-white shadow-blue-500/50'
+                  }`}>
+                    <div className="font-bold text-sm mb-1 flex items-center gap-1"><Package className="w-4 h-4" /> 数据包</div>
+                    <div className="text-xs font-mono break-all max-w-[150px]">
+                      {packet.encrypted ? packet.content.substring(0, 30) + '...' : packet.content}
+                    </div>
+                    {packet.hash && (
+                      <div className="mt-2 text-xs flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> Hash: {packet.hash.substring(0, 8)}...
+                      </div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -898,7 +969,7 @@ function App() {
               <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Shield className="w-4 h-4" /> 场景 2: 完整性</h4>
               <p className="text-slate-400">
                 <strong className="text-slate-300">HTTP:</strong> 数据可被篡改，服务器无法察觉<br />
-                <strong className="text-slate-300">HTTPS:</strong> SHA-256 Hash校验，篡改立即被发现
+                <strong className="text-slate-300">HTTPS:</strong> AES-GCM加密 + MAC校验，盲改被发现并丢弃
               </p>
             </div>
             <div>
