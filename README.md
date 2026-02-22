@@ -149,5 +149,5 @@ This project is licensed under the [MIT License](./LICENSE).
 <p align="center">
   <sub>Explaining security through code, illuminating cryptography through animation.</sub>
   <br/>
-  <sub>Built with care by <a href="https://github.com/diaosj">diaosj</a></sub>
+  <sub>Built with 🖤 by <a href="https://github.com/diaosj">diaosj</a></sub>
 </p>
