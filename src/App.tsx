@@ -30,30 +30,25 @@ function App() {
   const [hackerLog, setHackerLog] = useState<string[]>([])
   const hackerLogRef = useRef<string[]>([])
 
+  const TYPEWRITER_CHAR_DELAY_MS = 40
+
   // Typewriter effect for hacker terminal
   const typewriterAppend = useCallback((text: string) => {
     return new Promise<void>((resolve) => {
-      let i = 0
+      let charIndex = 0
+      const completedLines = [...hackerLogRef.current]
       const interval = setInterval(() => {
-        if (i <= text.length) {
-          const partial = text.slice(0, i)
-          const newLogs = [...hackerLogRef.current, partial]
-          // Replace the last element (the growing line)
-          if (i > 0) {
-            newLogs[newLogs.length - 2] = undefined as unknown as string
-            const filtered = newLogs.filter(Boolean)
-            hackerLogRef.current = filtered
-            setHackerLog([...filtered])
-          } else {
-            hackerLogRef.current = newLogs
-            setHackerLog([...newLogs])
-          }
-          i++
+        if (charIndex <= text.length) {
+          const partial = text.slice(0, charIndex)
+          const updatedLogs = [...completedLines, partial]
+          hackerLogRef.current = updatedLogs
+          setHackerLog([...updatedLogs])
+          charIndex++
         } else {
           clearInterval(interval)
           resolve()
         }
-      }, 40)
+      }, TYPEWRITER_CHAR_DELAY_MS)
     })
   }, [])
 
