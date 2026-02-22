@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock } from 'lucide-react'
 import CryptoJS from 'crypto-js'
@@ -31,6 +31,22 @@ function App() {
   const hackerLogRef = useRef<string[]>([])
   const [integrityStep, setIntegrityStep] = useState(0)
   const [serverAlert, setServerAlert] = useState(false)
+
+  const resetSimulation = useCallback(() => {
+    setPacket(null)
+    setIsAnimating(false)
+    setCenterMessage('')
+    setServerMessage('')
+    setShowCertError(false)
+    setHackerLog([])
+    hackerLogRef.current = []
+    setIntegrityStep(0)
+    setServerAlert(false)
+  }, [])
+
+  useEffect(() => {
+    resetSimulation()
+  }, [mode, scenario, resetSimulation])
 
   const TYPEWRITER_CHAR_DELAY_MS = 40
 
