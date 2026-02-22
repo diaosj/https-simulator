@@ -44,6 +44,8 @@ function App() {
   }
 
   // Encryption functions
+  // NOTE: The hardcoded key is intentional for this educational/demonstration app.
+  // In production, use secure key generation and key management systems.
   const encryptData = (text: string): string => {
     const encrypted = CryptoJS.AES.encrypt(text, 'secret-key').toString()
     return encrypted
