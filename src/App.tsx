@@ -409,12 +409,18 @@ function App() {
     const hackerEl = hackerRef.current
     const serverEl = serverRef.current
     if (!clientEl || !hackerEl || !serverEl) {
-      return { centerY: 400, serverY: 800 }
+      return { clientMid: 100, centerY: 400, serverY: 800 }
     }
-    const clientMid = clientEl.offsetTop + clientEl.offsetHeight / 2
-    const hackerMid = hackerEl.offsetTop + hackerEl.offsetHeight / 2
-    const serverMid = serverEl.offsetTop + serverEl.offsetHeight / 2
+    const clientRect = clientEl.getBoundingClientRect()
+    const hackerRect = hackerEl.getBoundingClientRect()
+    const serverRect = serverEl.getBoundingClientRect()
+    const stageRect = stageRef.current?.getBoundingClientRect()
+    const stageTop = stageRect?.top ?? 0
+    const clientMid = clientRect.top + clientRect.height / 2 - stageTop
+    const hackerMid = hackerRect.top + hackerRect.height / 2 - stageTop
+    const serverMid = serverRect.top + serverRect.height / 2 - stageTop
     return {
+      clientMid,
       centerY: hackerMid - clientMid,
       serverY: serverMid - clientMid,
     }
@@ -1151,7 +1157,7 @@ function App() {
                 animate={getPacketPosition(packet.position)}
                 transition={{ duration: 0.8, ease: 'easeInOut' }}
                 className={`absolute z-50 ${isMobile ? 'left-[10%]' : 'top-1/2 left-[12%]'}`}
-                style={isMobile ? { top: (clientRef.current?.offsetTop ?? 0) + (clientRef.current?.offsetHeight ?? 0) / 2 } : undefined}
+                style={isMobile ? { top: getMobileOffsets().clientMid } : undefined}
               >
                 {/* Integrity HTTPS: cipher box with shield */}
                 {scenario === 'integrity' && mode === 'https' ? (
