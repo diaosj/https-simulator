@@ -25,15 +25,13 @@
 
 > **"If you can't explain it simply, you don't understand it well enough."** — Richard Feynman
 
-**HTTPS Visual Simulator** is a **purely front-end, interactive animation sandbox** with a **cyberpunk / hacker-terminal** dark visual style. Its mission is to demystify the underlying cryptographic principles of HTTPS — the **CIA triad (Confidentiality, Integrity, Authentication)**, the **TLS handshake protocol**, and the **RSA/AES hybrid encryption scheme** — through **highly intuitive, frame-by-frame animated sequences**.
+**HTTPS Visual Simulator** is a **purely front-end, interactive animation sandbox** with a **cyberpunk / hacker-terminal** dark visual style. Its mission is to demystify the underlying cryptographic principles of HTTPS — **Confidentiality, Integrity, and Authentication**, the **TLS handshake protocol**, and the **RSA/AES hybrid encryption scheme** — through **highly intuitive, frame-by-frame animated sequences**.
 
 No backend required, no deployment needed — just open your browser and experience a visual showcase of **information security attack and defense**. Watch firsthand how a Man-in-the-Middle (MITM) launches attacks, and how modern cryptographic mechanisms defeat them one by one.
 
 <p align="center">
-  <!-- Place a project demo GIF / video screenshot here -->
-  <img src="" alt="HTTPS Visual Simulator Demo" width="800" />
-  <br/>
-  <em>Place a demo GIF or screenshot here</em>
+  <!-- Place a project demo GIF / video screenshot here. Update the path below once an asset is available. -->
+  <!-- <img src="path/to/demo.gif" alt="HTTPS Visual Simulator Demo" width="800" /> -->
 </p>
 
 ---
@@ -48,15 +46,15 @@ This project covers **4 in-depth cryptography teaching scenarios**, fully illust
 
 Demonstrates the complete **7-step TLS handshake process**:
 
-1. The **Server** presents its Public Key and Private Key.
-2. The Public Key is transmitted over the network to the **Client**, passing through the MITM's interception node.
+1. The **Server** owns an asymmetric key pair: a **Public Key** (shared via a certificate) and a **Private Key** (kept secret on the server and never transmitted). The animation visualizes both keys for educational purposes.
+2. The **Server** sends its certificate containing the Public Key over the network to the **Client**, passing through the MITM's interception node.
 3. The **Client** generates a Session Key using the Public Key.
 4. The Session Key is encapsulated in an encrypted box, locked with the Public Key.
 5. The encrypted box travels to the **Server**. The MITM intercepts it and attempts to decrypt — **failure**. The hacker terminal flashes:
    ```
    > Intercepting payload...
    > Attempting to decrypt...
-   > Error: Missing Server Private Key. Decryption FAILED.
+   > Error: Server private key is not accessible to attacker. Decryption FAILED.
    ```
 6. The **Server** unlocks the box with its Private Key and retrieves the Session Key.
 7. Both parties establish a **secure encrypted channel**; all subsequent communication uses AES symmetric encryption.
@@ -65,7 +63,7 @@ Demonstrates the complete **7-step TLS handshake process**:
 
 ### Scenario 1: Confidentiality (Preventing Eavesdropping)
 
-> **Plaintext vs. AES-GCM ciphertext — the MITM intercepts the data but cannot read it.**
+> **Plaintext vs. AES ciphertext — the MITM intercepts the data but cannot read it.**
 
 | Mode | Transmitted Content | What the MITM Sees |
 |:---:|:---:|:---:|
@@ -84,16 +82,16 @@ Many people mistakenly assume that data is safe once it's encrypted. This scenar
 
 **Attack Demo: Bit-Flipping Attack**
 
-1. The Client sends the AES-encrypted ciphertext along with a **SHA-256 hash digest**.
+1. The Client sends the AES-encrypted ciphertext along with a **SHA-256 hash** for integrity checking.
 2. The MITM intercepts the ciphertext and **blindly flips some bits** — the ciphertext is now "corrupted."
 3. The tampered ciphertext arrives at the Server, which decrypts it into garbled data.
-4. The Server recomputes the hash and compares it against the original digest — **mismatch!**
+4. The Server recomputes the hash and compares it against the original value — **mismatch!**
 5. The Server immediately **drops the packet** and raises a red alert:
    ```
    Integrity check failed! Data has been tampered with. Connection terminated.
    ```
 
-This is the power of the **MAC (Message Authentication Code)** mechanism: ensuring that not a single bit can be altered.
+> **Note:** This demo uses a simplified hash-based integrity check for educational purposes. In real-world TLS, integrity is enforced by **HMAC** or **AEAD authentication tags** (e.g., AES-GCM), which use a shared secret key to prevent an attacker from recomputing the tag after tampering.
 
 ---
 
