@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, FileText, BookOpen, Unlock } from 'lucide-react'
+import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock } from 'lucide-react'
 import CryptoJS from 'crypto-js'
 
 type Scenario = 'encryption' | 'integrity' | 'authentication'
@@ -26,29 +26,88 @@ function App() {
   const [serverMessage, setServerMessage] = useState('')
   const [showCertError, setShowCertError] = useState(false)
   const [handshakeStatus, setHandshakeStatus] = useState<HandshakeStatus>('idle')
-  const [handshakeStep, setHandshakeStep] = useState(0) // 0: none, 1: server sends public key, 2: client sends session key, 3: server decrypts
+  const [handshakeStep, setHandshakeStep] = useState(0)
+  const [hackerLog, setHackerLog] = useState<string[]>([])
+  const hackerLogRef = useRef<string[]>([])
+
+  // Typewriter effect for hacker terminal
+  const typewriterAppend = useCallback((text: string) => {
+    return new Promise<void>((resolve) => {
+      let i = 0
+      const interval = setInterval(() => {
+        if (i <= text.length) {
+          const partial = text.slice(0, i)
+          const newLogs = [...hackerLogRef.current, partial]
+          // Replace the last element (the growing line)
+          if (i > 0) {
+            newLogs[newLogs.length - 2] = undefined as unknown as string
+            const filtered = newLogs.filter(Boolean)
+            hackerLogRef.current = filtered
+            setHackerLog([...filtered])
+          } else {
+            hackerLogRef.current = newLogs
+            setHackerLog([...newLogs])
+          }
+          i++
+        } else {
+          clearInterval(interval)
+          resolve()
+        }
+      }, 40)
+    })
+  }, [])
 
   const runHandshakeAnimation = useCallback(async () => {
     setHandshakeStatus('in_progress')
     setHandshakeStep(0)
+    setHackerLog([])
+    hackerLogRef.current = []
 
-    // Step 1: Server sends public key to Client
-    await sleep(300)
+    // Step 1: Server shows Public Key (yellow) + Private Key (red)
+    await sleep(400)
     setHandshakeStep(1)
 
-    // Step 2: Client generates session key, encrypts with public key, sends to Server
-    await sleep(2000)
+    // Step 2: Public Key flies from Server → Client, Hacker intercepts
+    await sleep(1800)
     setHandshakeStep(2)
 
-    // Step 3: Server decrypts with private key, extracts session key
-    await sleep(2000)
+    // Step 3: Client receives Public Key, generates Session Key (green)
+    await sleep(2200)
     setHandshakeStep(3)
 
-    // Complete
-    await sleep(2000)
+    // Step 4: Session Key packaged into encrypted box, locked with Public Key
+    await sleep(1800)
+    setHandshakeStep(4)
+
+    // Step 5: Box flies to Server, pauses at Hacker with typewriter log
+    await sleep(1500)
+    setHandshakeStep(5)
+
+    // Typewriter logs during step 5 pause
+    await sleep(300)
+    hackerLogRef.current = []
+    setHackerLog([])
+    await typewriterAppend('> Intercepting payload...')
+    await sleep(400)
+    await typewriterAppend('> Attempting to decrypt...')
+    await sleep(400)
+    await typewriterAppend('> Error: Missing Server Private Key (Red). Decryption FAILED.')
+
+    await sleep(800)
+
+    // Step 6: Box continues to Server, Private Key decrypts, extracts Session Key
+    setHandshakeStep(6)
+
+    await sleep(2200)
+
+    // Step 7: Both sides show Secure Channel badge
+    setHandshakeStep(7)
+    await sleep(1200)
     setHandshakeStep(0)
     setHandshakeStatus('completed')
-  }, [])
+    setHackerLog([])
+    hackerLogRef.current = []
+  }, [typewriterAppend])
 
   const scenarioData = {
     encryption: {
@@ -363,10 +422,16 @@ function App() {
               </div>
             </div>
 
-            {handshakeStatus === 'completed' && (
-              <div className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center">
-                <span className="text-green-400 font-bold text-sm flex items-center justify-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> 安全通道已建立: AES-GCM</span>
-              </div>
+            {(handshakeStatus === 'completed' || (handshakeStatus === 'in_progress' && handshakeStep === 7)) && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center"
+              >
+                <span className="text-green-400 font-bold text-sm flex items-center justify-center gap-1">
+                  <Key className="w-4 h-4 text-green-400" /> Secure Channel: Session Key Ready
+                </span>
+              </motion.div>
             )}
 
             {showCertError && (
@@ -444,7 +509,31 @@ function App() {
               </div>
 
               <div className="min-h-[200px] flex items-center justify-center">
-                {centerMessage ? (
+                {handshakeStatus === 'in_progress' && (handshakeStep === 2 || handshakeStep === 5) ? (
+                  <div className={`p-4 rounded-lg text-left font-mono w-full ${
+                    handshakeStep === 5
+                      ? 'bg-red-900/30 border-2 border-red-500 animate-pulse'
+                      : 'bg-yellow-900/20 border border-yellow-500/40'
+                  }`}>
+                    {handshakeStep === 2 && (
+                      <p className="text-sm font-semibold text-green-400">
+                        [Intercepted: Public Key (Useless alone)]
+                      </p>
+                    )}
+                    {handshakeStep === 5 && hackerLog.length > 0 && (
+                      <div className="space-y-1">
+                        {hackerLog.map((line, i) => (
+                          <p key={i} className={`text-sm font-semibold ${
+                            line.includes('FAILED') ? 'text-red-400' : 'text-green-400'
+                          }`}>
+                            {line}
+                            {i === hackerLog.length - 1 && <span className="animate-pulse">▊</span>}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : centerMessage ? (
                   <div className={`p-4 rounded-lg text-center font-mono ${
                     mode === 'http' ? 'bg-red-900/30 border border-red-500/60' : 'bg-yellow-900/20 border border-yellow-500/40'
                   }`}>
@@ -476,10 +565,16 @@ function App() {
               </div>
             </div>
 
-            {handshakeStatus === 'completed' && (
-              <div className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center">
-                <span className="text-green-400 font-bold text-sm flex items-center justify-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> 安全通道已建立: AES-GCM</span>
-              </div>
+            {(handshakeStatus === 'completed' || (handshakeStatus === 'in_progress' && handshakeStep === 7)) && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center"
+              >
+                <span className="text-green-400 font-bold text-sm flex items-center justify-center gap-1">
+                  <Key className="w-4 h-4 text-green-400" /> Secure Channel: Session Key Ready
+                </span>
+              </motion.div>
             )}
 
             <div className="min-h-[200px] flex items-center justify-center">
@@ -504,52 +599,260 @@ function App() {
 
           {/* TLS Handshake Animation */}
           <AnimatePresence>
+            {/* Step 1: Server shows Public Key (yellow) + Private Key (red) */}
             {handshakeStatus === 'in_progress' && handshakeStep === 1 && (
               <motion.div
-                key="public-key"
-                initial={{ x: '68%', y: 0, opacity: 0 }}
-                animate={{ x: '2%', y: 0, opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: 'easeInOut' }}
-                className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
-              >
-                <div className="px-5 py-3 rounded-lg bg-yellow-600 text-white shadow-2xl shadow-yellow-500/50">
-                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><FileText className="w-4 h-4" /> 公钥 (Public Key)</div>
-                  <div className="text-xs">Server → Client</div>
-                </div>
-              </motion.div>
-            )}
-
-            {handshakeStatus === 'in_progress' && handshakeStep === 2 && (
-              <motion.div
-                key="session-key"
-                initial={{ x: '2%', y: 0, opacity: 0 }}
-                animate={{ x: '68%', y: 0, opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: 'easeInOut' }}
-                className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
-              >
-                <div className="px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
-                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><Lock className="w-4 h-4" /> <Key className="w-4 h-4" /> 会话密钥 (Session Key)</div>
-                  <div className="text-xs">公钥加密 → Client → Server</div>
-                </div>
-              </motion.div>
-            )}
-
-            {handshakeStatus === 'in_progress' && handshakeStep === 3 && (
-              <motion.div
-                key="decrypt-key"
+                key="step1-keys"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-                className="absolute top-1/2 right-[8%] z-50 -translate-y-1/2"
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+                className="absolute top-[20%] right-[4%] z-50 flex flex-col gap-2"
               >
-                <div className="px-5 py-3 rounded-lg bg-green-600 text-white shadow-2xl shadow-green-500/50">
-                  <div className="font-bold text-sm mb-1 flex items-center gap-1"><Unlock className="w-4 h-4" /> 私钥解密</div>
-                  <div className="text-xs flex items-center gap-1"><Key className="w-3 h-3" /> 会话密钥已提取</div>
+                <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  <span className="font-bold text-sm">Public Key</span>
+                </div>
+                <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  <span className="font-bold text-sm">Private Key</span>
                 </div>
               </motion.div>
+            )}
+
+            {/* Step 2: Public Key flies Server → Client (through Hacker) */}
+            {handshakeStatus === 'in_progress' && handshakeStep === 2 && (
+              <>
+                {/* Private Key stays at Server */}
+                <motion.div
+                  key="step2-private-key"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute top-[20%] right-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Private Key</span>
+                  </div>
+                </motion.div>
+                {/* Public Key flies to Client */}
+                <motion.div
+                  key="step2-public-key-fly"
+                  initial={{ x: '68%', y: 0, opacity: 1 }}
+                  animate={{ x: '2%', y: 0, opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1.8, ease: 'easeInOut' }}
+                  className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Public Key</span>
+                  </div>
+                </motion.div>
+              </>
+            )}
+
+            {/* Step 3: Client receives Public Key, generates Session Key */}
+            {handshakeStatus === 'in_progress' && handshakeStep === 3 && (
+              <>
+                {/* Private Key stays at Server */}
+                <motion.div
+                  key="step3-private-key"
+                  className="absolute top-[20%] right-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Private Key</span>
+                  </div>
+                </motion.div>
+                {/* Public Key arrived at Client */}
+                <motion.div
+                  key="step3-public-key"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute top-[20%] left-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Public Key</span>
+                  </div>
+                </motion.div>
+                {/* Session Key generates at Client */}
+                <motion.div
+                  key="step3-session-key"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.8, delay: 0.6, ease: 'backOut' }}
+                  className="absolute top-[35%] left-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-green-500 text-white shadow-2xl shadow-green-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Session Key</span>
+                  </div>
+                </motion.div>
+              </>
+            )}
+
+            {/* Step 4: Session Key packaged into box, locked with Public Key */}
+            {handshakeStatus === 'in_progress' && handshakeStep === 4 && (
+              <>
+                {/* Private Key stays at Server */}
+                <motion.div
+                  key="step4-private-key"
+                  className="absolute top-[20%] right-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Private Key</span>
+                  </div>
+                </motion.div>
+                {/* Session Key + Public Key merge into encrypted box */}
+                <motion.div
+                  key="step4-session-key-fade"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.6 }}
+                  className="absolute top-[35%] left-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-green-500 text-white shadow-2xl shadow-green-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Session Key</span>
+                  </div>
+                </motion.div>
+                <motion.div
+                  key="step4-pubkey-fade"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.6 }}
+                  className="absolute top-[20%] left-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-yellow-500 text-white shadow-2xl shadow-yellow-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Public Key</span>
+                  </div>
+                </motion.div>
+                {/* Encrypted box appears */}
+                <motion.div
+                  key="step4-box"
+                  initial={{ opacity: 0, scale: 0.3 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.8, delay: 0.5, ease: 'backOut' }}
+                  className="absolute top-[25%] left-[4%] z-50"
+                >
+                  <div className="relative px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-5 h-5" />
+                      <Lock className="w-4 h-4" />
+                      <span className="font-bold text-sm">Encrypted Box</span>
+                    </div>
+                    <div className="text-xs mt-1 opacity-80">Contains: Session Key</div>
+                    {/* Yellow badge indicating locked with Public Key */}
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Key className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+
+            {/* Step 5: Box flies to Server, pauses at Hacker */}
+            {handshakeStatus === 'in_progress' && handshakeStep === 5 && (
+              <>
+                {/* Private Key stays at Server */}
+                <motion.div
+                  key="step5-private-key"
+                  className="absolute top-[20%] right-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Private Key</span>
+                  </div>
+                </motion.div>
+                {/* Box flies to center then pauses */}
+                <motion.div
+                  key="step5-box"
+                  initial={{ x: '2%', y: 0, opacity: 1 }}
+                  animate={{ x: '35%', y: 0, opacity: 1 }}
+                  transition={{ duration: 1.0, ease: 'easeOut' }}
+                  className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+                >
+                  <div className="relative px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-5 h-5" />
+                      <Lock className="w-4 h-4" />
+                      <span className="font-bold text-sm">Encrypted Box</span>
+                    </div>
+                    <div className="text-xs mt-1 opacity-80">Contains: Session Key</div>
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Key className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+
+            {/* Step 6: Box continues to Server, Private Key decrypts, Session Key extracted */}
+            {handshakeStatus === 'in_progress' && handshakeStep === 6 && (
+              <>
+                {/* Private Key at Server */}
+                <motion.div
+                  key="step6-private-key"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute top-[20%] right-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-red-600 text-white shadow-2xl shadow-red-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Private Key</span>
+                  </div>
+                </motion.div>
+                {/* Box flies to Server then disappears */}
+                <motion.div
+                  key="step6-box"
+                  initial={{ x: '35%', y: 0, opacity: 1 }}
+                  animate={{ x: '68%', y: 0, opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 1.2, ease: 'easeInOut' }}
+                  className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+                >
+                  <div className="relative px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-5 h-5" />
+                      <Lock className="w-4 h-4" />
+                      <span className="font-bold text-sm">Encrypted Box</span>
+                    </div>
+                    <div className="text-xs mt-1 opacity-80">Contains: Session Key</div>
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Key className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                </motion.div>
+                {/* Private Key "touches" box - Unlock icon appears */}
+                <motion.div
+                  key="step6-unlock"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.0, duration: 0.5 }}
+                  className="absolute top-[38%] right-[8%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-red-900/60 border border-red-400 text-white flex items-center gap-2">
+                    <Unlock className="w-5 h-5 text-red-400" />
+                    <span className="text-sm font-bold">Decrypting...</span>
+                  </div>
+                </motion.div>
+                {/* Session Key extracted at Server */}
+                <motion.div
+                  key="step6-session-key"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.5, duration: 0.6, ease: 'backOut' }}
+                  className="absolute top-[50%] right-[4%] z-50"
+                >
+                  <div className="px-4 py-2 rounded-lg bg-green-500 text-white shadow-2xl shadow-green-500/50 flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    <span className="font-bold text-sm">Session Key</span>
+                  </div>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
 
