@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock, FileWarning, ShieldCheck, AlertOctagon } from 'lucide-react'
+import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock, FileWarning, ShieldCheck, AlertOctagon, Globe } from 'lucide-react'
 import CryptoJS from 'crypto-js'
+import { translations, type Locale } from './i18n'
 
 type Scenario = 'encryption' | 'integrity' | 'authentication'
 type Mode = 'http' | 'https'
 type HandshakeStatus = 'idle' | 'in_progress' | 'completed'
+type MessageType = 'error' | 'neutral' | 'success' | ''
 
 interface Packet {
   id: string
@@ -17,13 +19,16 @@ interface Packet {
 }
 
 function App() {
+  const [locale, setLocale] = useState<Locale>('en')
+  const t = translations[locale]
   const [scenario, setScenario] = useState<Scenario>('encryption')
   const [mode, setMode] = useState<Mode>('http')
-  const [inputText, setInputText] = useState('我的密码是123456')
+  const [inputText, setInputText] = useState(t.encryptionPlaceholder)
   const [packet, setPacket] = useState<Packet | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   const [centerMessage, setCenterMessage] = useState('')
   const [serverMessage, setServerMessage] = useState('')
+  const [serverMessageType, setServerMessageType] = useState<MessageType>('')
   const [showCertError, setShowCertError] = useState(false)
   const [handshakeStatus, setHandshakeStatus] = useState<HandshakeStatus>('idle')
   const [handshakeStep, setHandshakeStep] = useState(0)
@@ -39,6 +44,7 @@ function App() {
     setIsAnimating(false)
     setCenterMessage('')
     setServerMessage('')
+    setServerMessageType('')
     setShowCertError(false)
     setHackerLog([])
     hackerLogRef.current = []
@@ -135,19 +141,19 @@ function App() {
 
   const scenarioData = {
     encryption: {
-      title: '加密 (防监听)',
-      description: '演示数据加密如何保护隐私',
-      placeholder: '我的密码是123456',
+      title: t.encryptionTitle,
+      description: t.encryptionDesc,
+      placeholder: t.encryptionPlaceholder,
     },
     integrity: {
-      title: '完整性 (防篡改)',
-      description: '演示Hash如何检测数据被篡改',
-      placeholder: '转账给张三 100元',
+      title: t.integrityTitle,
+      description: t.integrityDesc,
+      placeholder: t.integrityPlaceholder,
     },
     authentication: {
-      title: '验证 (防伪造)',
-      description: '演示证书如何验证服务器身份',
-      placeholder: '我的银行账号',
+      title: t.authenticationTitle,
+      description: t.authenticationDesc,
+      placeholder: t.authenticationPlaceholder,
     },
   }
 
@@ -196,11 +202,12 @@ function App() {
 
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
-      setCenterMessage(`截获明文: "${inputText}"`)
+      setCenterMessage(t.interceptedPlaintext(inputText))
 
       await sleep(1000)
       setPacket({ ...newPacket, position: 'server' })
-      setServerMessage(`收到数据: "${inputText}"`)
+      setServerMessage(t.receivedData(inputText))
+      setServerMessageType('success')
 
       await sleep(1000)
       setPacket(null)
@@ -217,12 +224,13 @@ function App() {
 
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
-      setCenterMessage(`只能看到乱码，无法解密！`)
+      setCenterMessage(t.cannotDecrypt)
 
       await sleep(1000)
       setPacket({ ...newPacket, position: 'server' })
       const decrypted = decryptData(encrypted)
-      setServerMessage(`解密成功: "${decrypted}"`)
+      setServerMessage(t.decryptionSuccess(decrypted))
+      setServerMessageType('success')
 
       await sleep(1000)
       setPacket(null)
@@ -242,12 +250,13 @@ function App() {
 
       await sleep(500)
       setPacket({ ...newPacket, position: 'center' })
-      const tamperedContent = inputText.replace('张三', '黑客').replace('100', '10000')
-      setCenterMessage(`篡改数据: "${tamperedContent}"`)
+      const tamperedContent = t.tamperText(inputText)
+      setCenterMessage(t.tamperedData(tamperedContent))
 
       await sleep(1000)
       setPacket({ ...newPacket, content: tamperedContent, tampered: true, position: 'server' })
-      setServerMessage(`执行被篡改的指令: "${tamperedContent}"`)
+      setServerMessage(t.executingTampered(tamperedContent))
+      setServerMessageType('error')
 
       await sleep(1000)
       setPacket(null)
@@ -275,9 +284,9 @@ function App() {
 
       // Step 2: Hacker typewriter logs
       await sleep(400)
-      await typewriterAppend('> 截获加密数据 (AES-GCM)...')
+      await typewriterAppend(t.interceptingEncrypted)
       await sleep(400)
-      await typewriterAppend('> 无法解密！执行盲目比特翻转攻击 (Bit-Flipping)...')
+      await typewriterAppend(t.blindBitFlip)
       await sleep(300)
 
       // Step 3: Glitch attack visual — mark packet tampered
@@ -295,8 +304,9 @@ function App() {
       setServerAlert(true)
       const newHash = calculateHash(encrypted + '-corrupted')
       setServerMessage(
-        `❌ 完整性校验失败！MAC Tag 不匹配，数据在传输途中被篡改！已丢弃。\n原始MAC: ${hash.substring(0, 16)}...\n当前MAC: ${newHash.substring(0, 16)}...`
+        t.integrityFailed(hash.substring(0, 16), newHash.substring(0, 16))
       )
+      setServerMessageType('error')
 
       await sleep(2000)
       setPacket(null)
@@ -315,7 +325,7 @@ function App() {
       hackerLogRef.current = []
 
       // Hacker pretends to be server
-      await typewriterAppend('[伪装成目标服务器...]')
+      await typewriterAppend(t.impersonatingServer)
       await sleep(800)
 
       // Client sends plaintext data
@@ -331,10 +341,11 @@ function App() {
       setPacket({ ...newPacket, position: 'center' })
       await sleep(600)
       setPacket(null)
-      await typewriterAppend('[获取账号密码：钓鱼成功！]')
+      await typewriterAppend(t.phishingSuccess)
 
       // Server never received anything
-      setServerMessage('[未收到任何请求]')
+      setServerMessage(t.noRequestReceived)
+      setServerMessageType('neutral')
 
       await sleep(2000)
       setHackerLog([])
@@ -348,7 +359,7 @@ function App() {
 
       // Step 1: Hacker sends fake certificate to Client
       setAuthStep(1)
-      await typewriterAppend('> 发送伪造的 SSL 证书...')
+      await typewriterAppend(t.sendingFakeCert)
       await sleep(2200)
 
       // Step 2: Client receives fake cert, scanning/verification begins
@@ -362,8 +373,9 @@ function App() {
 
       // Step 4: UI warning displayed
       setAuthStep(4)
-      setServerMessage('[未收到任何请求]')
-      await typewriterAppend('> 伪装失败！客户端拒绝了伪造证书。')
+      setServerMessage(t.noRequestReceived)
+      setServerMessageType('neutral')
+      await typewriterAppend(t.impersonationFailed)
 
       await sleep(3000)
 
@@ -399,10 +411,31 @@ function App() {
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
               <Shield className="w-8 h-8 text-cyan-400" />
-              HTTPS 安全演示器
+              {t.title}
             </h1>
             
-            {/* HTTP/HTTPS Toggle */}
+            <div className="flex items-center gap-4">
+              {/* Language Toggle */}
+              <button
+                onClick={() => {
+                  const newLocale = locale === 'en' ? 'zh' : 'en'
+                  setLocale(newLocale)
+                  const newT = translations[newLocale]
+                  const placeholders: Record<Scenario, string> = {
+                    encryption: newT.encryptionPlaceholder,
+                    integrity: newT.integrityPlaceholder,
+                    authentication: newT.authenticationPlaceholder,
+                  }
+                  setInputText(placeholders[scenario])
+                  resetSimulation()
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-cyan-500 transition-all"
+              >
+                <Globe className="w-4 h-4 text-cyan-400" />
+                <span className="font-mono text-sm">{locale === 'en' ? '中文' : 'EN'}</span>
+              </button>
+
+              {/* HTTP/HTTPS Toggle */}
             <button
               onClick={() => {
                 if (mode === 'http') {
@@ -432,6 +465,7 @@ function App() {
                 {mode === 'https' ? 'HTTPS' : ''}
               </span>
             </button>
+            </div>
           </div>
 
           {/* Scenario Tabs */}
@@ -439,7 +473,7 @@ function App() {
             <button
               onClick={() => {
                 setScenario('encryption')
-                setInputText('我的密码是123456')
+                setInputText(t.encryptionPlaceholder)
               }}
               className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
                 scenario === 'encryption'
@@ -448,12 +482,12 @@ function App() {
               }`}
             >
               <Lock className="inline-block w-5 h-5 mr-2" />
-              1. 加密 (防监听)
+              {t.encryptionTab}
             </button>
             <button
               onClick={() => {
                 setScenario('integrity')
-                setInputText('转账给张三 100元')
+                setInputText(t.integrityPlaceholder)
               }}
               className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
                 scenario === 'integrity'
@@ -462,12 +496,12 @@ function App() {
               }`}
             >
               <FileCheck className="inline-block w-5 h-5 mr-2" />
-              2. 完整性 (防篡改)
+              {t.integrityTab}
             </button>
             <button
               onClick={() => {
                 setScenario('authentication')
-                setInputText('我的银行账号')
+                setInputText(t.authenticationPlaceholder)
               }}
               className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
                 scenario === 'authentication'
@@ -476,7 +510,7 @@ function App() {
               }`}
             >
               <CheckCircle className="inline-block w-5 h-5 mr-2" />
-              3. 验证 (防伪造)
+              {t.authenticationTab}
             </button>
           </div>
 
@@ -504,8 +538,8 @@ function App() {
                 <Monitor className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-slate-100">客户端</h3>
-                <p className="text-sm text-slate-400">用户浏览器</p>
+                <h3 className="font-bold text-lg text-slate-100">{t.client}</h3>
+                <p className="text-sm text-slate-400">{t.clientDesc}</p>
               </div>
             </div>
 
@@ -538,7 +572,7 @@ function App() {
                     className="flex items-center justify-center gap-2 text-cyan-400 font-bold"
                   >
                     <ShieldCheck className="w-6 h-6" />
-                    CA 证书验证中...
+                    {t.caVerifying}
                   </motion.div>
                 </motion.div>
               )}
@@ -557,7 +591,7 @@ function App() {
                 >
                   <div className="flex items-center justify-center gap-2 text-red-400 font-bold">
                     <XCircle className="w-6 h-6" />
-                    证书验证失败！
+                    {t.certFailed}
                   </div>
                 </motion.div>
               )}
@@ -578,7 +612,7 @@ function App() {
                     ERR_CERT_AUTHORITY_INVALID
                   </div>
                   <p className="text-red-300 font-semibold text-sm">
-                    身份验证失败！已切断连接。
+                    {t.authFailed}
                   </p>
                 </motion.div>
               )}
@@ -588,7 +622,7 @@ function App() {
               <div className="mb-4 p-4 bg-red-900/40 border-2 border-red-500 rounded-lg animate-pulse">
                 <div className="flex items-center gap-2 text-red-400 font-bold">
                   <XCircle className="w-5 h-5" />
-                  证书无效，拦截连接！
+                  {t.certInvalid}
                 </div>
               </div>
             )}
@@ -611,9 +645,9 @@ function App() {
                 }`}
               >
                 {handshakeStatus === 'in_progress' ? (
-                  <><Lock className="inline-block w-4 h-4 mr-1" /> 握手中...</>
-                ) : isAnimating ? '发送中...' : (
-                  <><Send className="inline-block w-4 h-4 mr-1" /> 发送</>
+                  <><Lock className="inline-block w-4 h-4 mr-1" /> {t.handshaking}</>
+                ) : isAnimating ? t.sending : (
+                  <><Send className="inline-block w-4 h-4 mr-1" /> {t.send}</>
                 )}
               </button>
 
@@ -653,8 +687,8 @@ function App() {
                   <Wifi className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-100">中间人</h3>
-                  <p className="text-sm text-slate-500">公共WiFi / 黑客</p>
+                  <h3 className="font-bold text-lg text-slate-100">{t.hacker}</h3>
+                  <p className="text-sm text-slate-500">{t.hackerDesc}</p>
                 </div>
               </div>
 
@@ -699,7 +733,7 @@ function App() {
                     <div className="space-y-1">
                       {hackerLog.map((line, i) => (
                         <p key={i} className={`text-sm font-semibold ${
-                          line.includes('失败') ? 'text-red-400' : 'text-green-400'
+                          line.includes('FAILED') || line.includes('failed') || line.includes('失败') ? 'text-red-400' : 'text-green-400'
                         }`}>
                           {line}
                           {i === hackerLog.length - 1 && <span className="animate-pulse">▊</span>}
@@ -736,8 +770,8 @@ function App() {
                 <Server className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-slate-100">服务器</h3>
-                <p className="text-sm text-slate-400">银行 / 网站</p>
+                <h3 className="font-bold text-lg text-slate-100">{t.server}</h3>
+                <p className="text-sm text-slate-400">{t.serverDesc}</p>
               </div>
             </div>
 
@@ -756,9 +790,9 @@ function App() {
             <div className="min-h-[200px] flex items-center justify-center">
               {serverMessage ? (
                 <div className={`p-4 rounded-lg ${
-                  serverMessage.includes('被篡改') || serverMessage.includes('拒收') || serverMessage.includes('失败')
+                  serverMessageType === 'error'
                     ? 'bg-red-900/30 border border-red-500/60'
-                    : serverMessage.includes('未收到') || serverMessage.includes('等待连接')
+                    : serverMessageType === 'neutral'
                     ? 'bg-slate-800 border border-slate-600'
                     : 'bg-green-900/30 border border-green-500/60'
                 }`}>
@@ -767,7 +801,7 @@ function App() {
               ) : (
                 <div className="text-slate-500 text-center">
                   <Shield className="w-12 h-12 mx-auto mb-2" />
-                  <p className="text-sm">等待数据...</p>
+                  <p className="text-sm">{t.waitingForData}</p>
                 </div>
               )}
             </div>
@@ -1071,13 +1105,13 @@ function App() {
                       : 'bg-slate-900 border-green-500 shadow-green-500/30'
                   }`}>
                     <div className="font-bold text-sm mb-1 flex items-center gap-1 text-slate-200">
-                      <Package className="w-4 h-4" /> 密码箱
+                      <Package className="w-4 h-4" /> {t.cipherBox}
                     </div>
                     <div className="text-xs font-mono break-all max-w-[150px] text-slate-400">
                       {packet.content.substring(0, 20)}...
                     </div>
                     <div className="mt-1 text-xs flex items-center gap-1 text-green-400">
-                      <Key className="w-3 h-3" /> AES-GCM
+                      <Key className="w-3 h-3" /> AES
                     </div>
                     {/* Shield / MAC tag */}
                     {integrityStep < 4 ? (
@@ -1098,7 +1132,7 @@ function App() {
                       ? 'bg-purple-600 text-white shadow-purple-500/50'
                       : 'bg-blue-600 text-white shadow-blue-500/50'
                   }`}>
-                    <div className="font-bold text-sm mb-1 flex items-center gap-1"><Package className="w-4 h-4" /> 数据包</div>
+                    <div className="font-bold text-sm mb-1 flex items-center gap-1"><Package className="w-4 h-4" /> {t.dataPacket}</div>
                     <div className="text-xs font-mono break-all max-w-[150px]">
                       {packet.encrypted ? packet.content.substring(0, 30) + '...' : packet.content}
                     </div>
@@ -1116,27 +1150,27 @@ function App() {
 
         {/* Legend */}
         <div className="mt-8 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-xl shadow-lg p-6">
-          <h3 className="font-bold text-lg mb-4 text-slate-100 flex items-center gap-2"><BookOpen className="w-5 h-5" /> 说明</h3>
+          <h3 className="font-bold text-lg mb-4 text-slate-100 flex items-center gap-2"><BookOpen className="w-5 h-5" /> {t.legend}</h3>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Lock className="w-4 h-4" /> 场景 1: 加密</h4>
+              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Lock className="w-4 h-4" /> {t.scenario1Legend}</h4>
               <p className="text-slate-400">
-                <strong className="text-slate-300">HTTP:</strong> 明文传输，黑客能看到所有内容<br />
-                <strong className="text-slate-300">HTTPS:</strong> AES加密，黑客只能看到乱码
+                <strong className="text-slate-300">HTTP:</strong> {t.scenario1Http}<br />
+                <strong className="text-slate-300">HTTPS:</strong> {t.scenario1Https}
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Shield className="w-4 h-4" /> 场景 2: 完整性</h4>
+              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Shield className="w-4 h-4" /> {t.scenario2Legend}</h4>
               <p className="text-slate-400">
-                <strong className="text-slate-300">HTTP:</strong> 数据可被篡改，服务器无法察觉<br />
-                <strong className="text-slate-300">HTTPS:</strong> AES-GCM加密 + MAC校验，盲改被发现并丢弃
+                <strong className="text-slate-300">HTTP:</strong> {t.scenario2Http}<br />
+                <strong className="text-slate-300">HTTPS:</strong> {t.scenario2Https}
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> 场景 3: 验证</h4>
+              <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> {t.scenario3Legend}</h4>
               <p className="text-slate-400">
-                <strong className="text-slate-300">HTTP:</strong> 黑客伪装成服务器，钓鱼截获全部数据<br />
-                <strong className="text-slate-300">HTTPS:</strong> CA证书验证假证书，握手第一步即失败，连接被切断
+                <strong className="text-slate-300">HTTP:</strong> {t.scenario3Http}<br />
+                <strong className="text-slate-300">HTTPS:</strong> {t.scenario3Https}
               </p>
             </div>
           </div>
