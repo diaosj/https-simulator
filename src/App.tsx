@@ -23,7 +23,7 @@ function App() {
   const t = translations[locale]
   const [scenario, setScenario] = useState<Scenario>('encryption')
   const [mode, setMode] = useState<Mode>('http')
-  const [inputText, setInputText] = useState(t.encryptionPlaceholder)
+  const [inputText, setInputText] = useState(() => translations['en'].encryptionPlaceholder)
   const [packet, setPacket] = useState<Packet | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   const [centerMessage, setCenterMessage] = useState('')
