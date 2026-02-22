@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi } from 'lucide-react'
 import CryptoJS from 'crypto-js'
 
 type Scenario = 'encryption' | 'integrity' | 'authentication'
 type Mode = 'http' | 'https'
+type HandshakeStatus = 'idle' | 'in_progress' | 'completed'
 
 interface Packet {
   id: string
@@ -24,6 +25,30 @@ function App() {
   const [centerMessage, setCenterMessage] = useState('')
   const [serverMessage, setServerMessage] = useState('')
   const [showCertError, setShowCertError] = useState(false)
+  const [handshakeStatus, setHandshakeStatus] = useState<HandshakeStatus>('idle')
+  const [handshakeStep, setHandshakeStep] = useState(0) // 0: none, 1: server sends public key, 2: client sends session key, 3: server decrypts
+
+  const runHandshakeAnimation = useCallback(async () => {
+    setHandshakeStatus('in_progress')
+    setHandshakeStep(0)
+
+    // Step 1: Server sends public key to Client
+    await sleep(300)
+    setHandshakeStep(1)
+
+    // Step 2: Client generates session key, encrypts with public key, sends to Server
+    await sleep(2000)
+    setHandshakeStep(2)
+
+    // Step 3: Server decrypts with private key, extracts session key
+    await sleep(2000)
+    setHandshakeStep(3)
+
+    // Complete
+    await sleep(2000)
+    setHandshakeStep(0)
+    setHandshakeStatus('completed')
+  }, [])
 
   const scenarioData = {
     encryption: {
@@ -237,7 +262,16 @@ function App() {
             
             {/* HTTP/HTTPS Toggle */}
             <button
-              onClick={() => setMode(mode === 'http' ? 'https' : 'http')}
+              onClick={() => {
+                if (mode === 'http') {
+                  setMode('https')
+                  runHandshakeAnimation()
+                } else {
+                  setMode('http')
+                  setHandshakeStatus('idle')
+                  setHandshakeStep(0)
+                }
+              }}
               className={`relative inline-flex items-center h-16 rounded-full w-32 transition-colors ${
                 mode === 'https' ? 'bg-green-500' : 'bg-red-500'
               }`}
@@ -329,6 +363,12 @@ function App() {
               </div>
             </div>
 
+            {handshakeStatus === 'completed' && (
+              <div className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center">
+                <span className="text-green-400 font-bold text-sm">🟢 安全通道已建立: AES-GCM</span>
+              </div>
+            )}
+
             {showCertError && (
               <div className="mb-4 p-4 bg-red-900/40 border-2 border-red-500 rounded-lg animate-pulse">
                 <div className="flex items-center gap-2 text-red-400 font-bold">
@@ -348,14 +388,14 @@ function App() {
               />
               <button
                 onClick={handleSend}
-                disabled={isAnimating}
+                disabled={isAnimating || handshakeStatus === 'in_progress'}
                 className={`w-full py-3 rounded-lg font-bold transition-all ${
-                  isAnimating
+                  isAnimating || handshakeStatus === 'in_progress'
                     ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                     : 'bg-cyan-600 text-white hover:bg-cyan-500 active:scale-95 shadow-lg shadow-cyan-500/20'
                 }`}
               >
-                {isAnimating ? '发送中...' : '📤 发送'}
+                {handshakeStatus === 'in_progress' ? '🔒 握手中...' : isAnimating ? '发送中...' : '📤 发送'}
               </button>
 
               {mode === 'https' && scenario === 'integrity' && (
@@ -432,6 +472,12 @@ function App() {
               </div>
             </div>
 
+            {handshakeStatus === 'completed' && (
+              <div className="mb-4 px-3 py-2 bg-green-900/40 border border-green-500 rounded-lg text-center">
+                <span className="text-green-400 font-bold text-sm">🟢 安全通道已建立: AES-GCM</span>
+              </div>
+            )}
+
             <div className="min-h-[200px] flex items-center justify-center">
               {serverMessage ? (
                 <div className={`p-4 rounded-lg ${
@@ -451,6 +497,57 @@ function App() {
               )}
             </div>
           </div>
+
+          {/* TLS Handshake Animation */}
+          <AnimatePresence>
+            {handshakeStatus === 'in_progress' && handshakeStep === 1 && (
+              <motion.div
+                key="public-key"
+                initial={{ x: '68%', y: 0, opacity: 0 }}
+                animate={{ x: '2%', y: 0, opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.5, ease: 'easeInOut' }}
+                className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+              >
+                <div className="px-5 py-3 rounded-lg bg-yellow-600 text-white shadow-2xl shadow-yellow-500/50">
+                  <div className="font-bold text-sm mb-1">📜 公钥 (Public Key)</div>
+                  <div className="text-xs">Server → Client</div>
+                </div>
+              </motion.div>
+            )}
+
+            {handshakeStatus === 'in_progress' && handshakeStep === 2 && (
+              <motion.div
+                key="session-key"
+                initial={{ x: '2%', y: 0, opacity: 0 }}
+                animate={{ x: '68%', y: 0, opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.5, ease: 'easeInOut' }}
+                className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+              >
+                <div className="px-5 py-3 rounded-lg bg-purple-600 text-white shadow-2xl shadow-purple-500/50">
+                  <div className="font-bold text-sm mb-1">🔒 🔑 会话密钥 (Session Key)</div>
+                  <div className="text-xs">公钥加密 → Client → Server</div>
+                </div>
+              </motion.div>
+            )}
+
+            {handshakeStatus === 'in_progress' && handshakeStep === 3 && (
+              <motion.div
+                key="decrypt-key"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className="absolute top-1/2 right-[8%] z-50 -translate-y-1/2"
+              >
+                <div className="px-5 py-3 rounded-lg bg-green-600 text-white shadow-2xl shadow-green-500/50">
+                  <div className="font-bold text-sm mb-1">🟥 私钥解密</div>
+                  <div className="text-xs">🔑 会话密钥已提取</div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Animated Packet */}
           <AnimatePresence>
