@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock } from 'lucide-react'
+import { Shield, Lock, FileCheck, CheckCircle, XCircle, AlertTriangle, Wifi, Monitor, Server, Send, Package, Key, BookOpen, Unlock, FileWarning, ShieldCheck, AlertOctagon } from 'lucide-react'
 import CryptoJS from 'crypto-js'
 
 type Scenario = 'encryption' | 'integrity' | 'authentication'
@@ -31,6 +31,8 @@ function App() {
   const hackerLogRef = useRef<string[]>([])
   const [integrityStep, setIntegrityStep] = useState(0)
   const [serverAlert, setServerAlert] = useState(false)
+  const [authStep, setAuthStep] = useState(0)
+  const [clientAlertFlash, setClientAlertFlash] = useState(false)
 
   const resetSimulation = useCallback(() => {
     setPacket(null)
@@ -42,10 +44,19 @@ function App() {
     hackerLogRef.current = []
     setIntegrityStep(0)
     setServerAlert(false)
+    setAuthStep(0)
+    setClientAlertFlash(false)
   }, [])
 
   useEffect(() => {
     resetSimulation()
+    if (scenario === 'authentication') {
+      setHandshakeStatus('idle')
+      setHandshakeStep(0)
+    } else if (mode === 'https' && handshakeStatus === 'idle') {
+      runHandshakeAnimation()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, scenario, resetSimulation])
 
   const TYPEWRITER_CHAR_DELAY_MS = 40
@@ -299,36 +310,68 @@ function App() {
 
   const handleAuthenticationScenario = async () => {
     if (mode === 'http') {
-      // HTTP: hacker can pretend to be server
-      setCenterMessage(`我是真服务器！(假冒)`)
-      await sleep(500)
+      // HTTP: Phishing success - hacker impersonates server
+      setHackerLog([])
+      hackerLogRef.current = []
 
+      // Hacker pretends to be server
+      await typewriterAppend('[伪装成目标服务器...]')
+      await sleep(800)
+
+      // Client sends plaintext data
       const newPacket: Packet = {
         id: '1',
         content: inputText,
         position: 'client',
       }
       setPacket(newPacket)
-
       await sleep(500)
+
+      // Hacker intercepts and swallows the packet
       setPacket({ ...newPacket, position: 'center' })
-      setCenterMessage(`成功截获所有数据: "${inputText}"`)
-      setServerMessage(`服务器未收到任何数据`)
-
-      await sleep(1500)
+      await sleep(600)
       setPacket(null)
+      await typewriterAppend('[获取账号密码：钓鱼成功！]')
+
+      // Server never received anything
+      setServerMessage('[未收到任何请求]')
+
+      await sleep(2000)
+      setHackerLog([])
+      hackerLogRef.current = []
     } else {
-      // HTTPS: certificate validation
-      setShowCertError(true)
-      setCenterMessage(`无法提供合法CA证书`)
-      setServerMessage(`等待连接...`)
+      // HTTPS: CA certificate verification - handshake fails at step 1
+      setHackerLog([])
+      hackerLogRef.current = []
+      setAuthStep(0)
+      setClientAlertFlash(false)
 
-      await sleep(1500)
-      setShowCertError(false)
-      setCenterMessage(`连接被客户端拦截`)
-      setServerMessage(`服务器未收到任何数据`)
+      // Step 1: Hacker sends fake certificate to Client
+      setAuthStep(1)
+      await typewriterAppend('> 发送伪造的 SSL 证书...')
+      await sleep(2200)
 
+      // Step 2: Client receives fake cert, scanning/verification begins
+      setAuthStep(2)
+      await sleep(1800)
+
+      // Step 3: Verification fails, certificate rejected, client border flashes red
+      setAuthStep(3)
+      setClientAlertFlash(true)
       await sleep(1500)
+
+      // Step 4: UI warning displayed
+      setAuthStep(4)
+      setServerMessage('[未收到任何请求]')
+      await typewriterAppend('> 伪装失败！客户端拒绝了伪造证书。')
+
+      await sleep(3000)
+
+      // Reset auth animation state
+      setAuthStep(0)
+      setClientAlertFlash(false)
+      setHackerLog([])
+      hackerLogRef.current = []
     }
     setIsAnimating(false)
   }
@@ -346,7 +389,7 @@ function App() {
     }
   }
 
-  const isHackerActive = (centerMessage !== '' && mode === 'http') || (integrityStep > 0 && integrityStep < 3)
+  const isHackerActive = (centerMessage !== '' && mode === 'http') || (integrityStep > 0 && integrityStep < 3) || (scenario === 'authentication' && hackerLog.length > 0)
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-slate-200">
@@ -364,7 +407,9 @@ function App() {
               onClick={() => {
                 if (mode === 'http') {
                   setMode('https')
-                  runHandshakeAnimation()
+                  if (scenario !== 'authentication') {
+                    runHandshakeAnimation()
+                  }
                 } else {
                   setMode('http')
                   setHandshakeStatus('idle')
@@ -448,7 +493,9 @@ function App() {
         <div className="grid grid-cols-3 gap-6 relative">
           {/* Client */}
           <div className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
-            mode === 'https'
+            clientAlertFlash
+              ? 'border-2 border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] client-alert-flash'
+              : mode === 'https'
               ? 'border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
               : 'border border-slate-700'
           }`}>
@@ -462,7 +509,7 @@ function App() {
               </div>
             </div>
 
-            {(handshakeStatus === 'completed' || (handshakeStatus === 'in_progress' && handshakeStep === 7)) && (
+            {scenario !== 'authentication' && (handshakeStatus === 'completed' || (handshakeStatus === 'in_progress' && handshakeStep === 7)) && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -474,7 +521,70 @@ function App() {
               </motion.div>
             )}
 
-            {showCertError && (
+            {/* Auth Scenario HTTPS: Scanning animation (Step 2) */}
+            <AnimatePresence>
+              {scenario === 'authentication' && authStep === 2 && (
+                <motion.div
+                  key="auth-scan"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="mb-4 p-4 bg-cyan-900/30 border-2 border-cyan-500 rounded-lg text-center"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.15, 1], opacity: [1, 0.7, 1] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                    className="flex items-center justify-center gap-2 text-cyan-400 font-bold"
+                  >
+                    <ShieldCheck className="w-6 h-6" />
+                    CA 证书验证中...
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Auth Scenario HTTPS: Verification failed (Step 3) */}
+            <AnimatePresence>
+              {scenario === 'authentication' && authStep === 3 && (
+                <motion.div
+                  key="auth-fail"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="mb-4 p-4 bg-red-900/40 border-2 border-red-500 rounded-lg text-center"
+                >
+                  <div className="flex items-center justify-center gap-2 text-red-400 font-bold">
+                    <XCircle className="w-6 h-6" />
+                    证书验证失败！
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Auth Scenario HTTPS: ERR_CERT warning (Step 4) */}
+            <AnimatePresence>
+              {scenario === 'authentication' && authStep === 4 && (
+                <motion.div
+                  key="auth-warning"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mb-4 p-4 bg-red-900/50 border-2 border-red-500 rounded-lg"
+                >
+                  <div className="flex items-center gap-2 text-red-400 font-bold text-lg mb-2">
+                    <AlertOctagon className="w-6 h-6" />
+                    ERR_CERT_AUTHORITY_INVALID
+                  </div>
+                  <p className="text-red-300 font-semibold text-sm">
+                    身份验证失败！已切断连接。
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {showCertError && scenario !== 'authentication' && (
               <div className="mb-4 p-4 bg-red-900/40 border-2 border-red-500 rounded-lg animate-pulse">
                 <div className="flex items-center gap-2 text-red-400 font-bold">
                   <XCircle className="w-5 h-5" />
@@ -584,6 +694,19 @@ function App() {
                       ))}
                     </div>
                   </div>
+                ) : scenario === 'authentication' && hackerLog.length > 0 ? (
+                  <div className="p-4 rounded-lg text-left font-mono w-full bg-red-900/30 border-2 border-red-500 animate-pulse">
+                    <div className="space-y-1">
+                      {hackerLog.map((line, i) => (
+                        <p key={i} className={`text-sm font-semibold ${
+                          line.includes('失败') ? 'text-red-400' : 'text-green-400'
+                        }`}>
+                          {line}
+                          {i === hackerLog.length - 1 && <span className="animate-pulse">▊</span>}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
                 ) : centerMessage ? (
                   <div className={`p-4 rounded-lg text-center font-mono ${
                     mode === 'http' ? 'bg-red-900/30 border border-red-500/60' : 'bg-yellow-900/20 border border-yellow-500/40'
@@ -618,7 +741,7 @@ function App() {
               </div>
             </div>
 
-            {(handshakeStatus === 'completed' || (handshakeStatus === 'in_progress' && handshakeStep === 7)) && (
+            {scenario !== 'authentication' && (handshakeStatus === 'completed' || (handshakeStatus === 'in_progress' && handshakeStep === 7)) && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -907,6 +1030,27 @@ function App() {
                 </motion.div>
               </>
             )}
+
+            {/* Auth Scenario HTTPS: Fake certificate flies from Hacker → Client */}
+            {scenario === 'authentication' && authStep === 1 && (
+              <motion.div
+                key="auth-fake-cert"
+                initial={{ x: '35%', y: 0, opacity: 1 }}
+                animate={{ x: '2%', y: 0, opacity: 1 }}
+                transition={{ duration: 1.8, ease: 'easeInOut' }}
+                className="absolute top-1/2 left-0 z-50 -translate-y-1/2"
+              >
+                <div className="px-4 py-3 rounded-lg bg-red-700 text-white shadow-2xl shadow-red-500/50 border-2 border-red-400">
+                  <div className="flex items-center gap-2">
+                    <FileWarning className="w-5 h-5" />
+                    <span className="font-bold text-sm">Fake Certificate</span>
+                  </div>
+                  <div className="text-xs mt-1 opacity-80 flex items-center gap-1">
+                    <Key className="w-3 h-3" /> Fake Public Key
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
 
           {/* Animated Packet */}
@@ -991,8 +1135,8 @@ function App() {
             <div>
               <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> 场景 3: 验证</h4>
               <p className="text-slate-400">
-                <strong className="text-slate-300">HTTP:</strong> 黑客可假冒服务器截获数据<br />
-                <strong className="text-slate-300">HTTPS:</strong> CA证书验证，假冒立即被识破
+                <strong className="text-slate-300">HTTP:</strong> 黑客伪装成服务器，钓鱼截获全部数据<br />
+                <strong className="text-slate-300">HTTPS:</strong> CA证书验证假证书，握手第一步即失败，连接被切断
               </p>
             </div>
           </div>
