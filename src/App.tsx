@@ -406,15 +406,15 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0D1117] text-slate-200">
       {/* Header */}
-      <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 shadow-lg p-6">
+      <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 shadow-lg p-3 sm:p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
-              <Shield className="w-8 h-8 text-cyan-400" />
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-4 sm:mb-6">
+            <h1 className="text-lg sm:text-3xl font-bold text-slate-100 flex items-center gap-2 sm:gap-3">
+              <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" />
               {t.title}
             </h1>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Language Toggle */}
               <button
                 onClick={() => {
@@ -449,19 +449,19 @@ function App() {
                   setHandshakeStep(0)
                 }
               }}
-              className={`relative inline-flex items-center h-16 rounded-full w-32 transition-colors ${
+              className={`relative inline-flex items-center h-10 sm:h-16 rounded-full w-20 sm:w-32 transition-colors ${
                 mode === 'https' ? 'bg-green-500' : 'bg-red-500'
               }`}
             >
               <span
-                className={`inline-block w-14 h-14 transform rounded-full bg-white shadow-lg transition-transform ${
-                  mode === 'https' ? 'translate-x-16' : 'translate-x-1'
+                className={`inline-block w-8 h-8 sm:w-14 sm:h-14 transform rounded-full bg-white shadow-lg transition-transform ${
+                  mode === 'https' ? 'translate-x-10 sm:translate-x-16' : 'translate-x-1'
                 }`}
               />
-              <span className="absolute left-2 text-white font-bold text-sm">
+              <span className="absolute left-1.5 sm:left-2 text-white font-bold text-[10px] sm:text-sm">
                 {mode === 'http' ? 'HTTP' : ''}
               </span>
-              <span className="absolute right-2 text-white font-bold text-sm">
+              <span className="absolute right-1.5 sm:right-2 text-white font-bold text-[10px] sm:text-sm">
                 {mode === 'https' ? 'HTTPS' : ''}
               </span>
             </button>
@@ -469,19 +469,19 @@ function App() {
           </div>
 
           {/* Scenario Tabs */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <button
               onClick={() => {
                 setScenario('encryption')
                 setInputText(t.encryptionPlaceholder)
               }}
-              className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
+              className={`flex-1 px-3 py-2 sm:px-6 sm:py-4 rounded-lg font-semibold text-sm sm:text-base transition-all ${
                 scenario === 'encryption'
                   ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 transform scale-105'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
               }`}
             >
-              <Lock className="inline-block w-5 h-5 mr-2" />
+              <Lock className="inline-block w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               {t.encryptionTab}
             </button>
             <button
@@ -489,13 +489,13 @@ function App() {
                 setScenario('integrity')
                 setInputText(t.integrityPlaceholder)
               }}
-              className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
+              className={`flex-1 px-3 py-2 sm:px-6 sm:py-4 rounded-lg font-semibold text-sm sm:text-base transition-all ${
                 scenario === 'integrity'
                   ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 transform scale-105'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
               }`}
             >
-              <FileCheck className="inline-block w-5 h-5 mr-2" />
+              <FileCheck className="inline-block w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               {t.integrityTab}
             </button>
             <button
@@ -503,13 +503,13 @@ function App() {
                 setScenario('authentication')
                 setInputText(t.authenticationPlaceholder)
               }}
-              className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
+              className={`flex-1 px-3 py-2 sm:px-6 sm:py-4 rounded-lg font-semibold text-sm sm:text-base transition-all ${
                 scenario === 'authentication'
                   ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 transform scale-105'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
               }`}
             >
-              <CheckCircle className="inline-block w-5 h-5 mr-2" />
+              <CheckCircle className="inline-block w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               {t.authenticationTab}
             </button>
           </div>
@@ -523,8 +523,9 @@ function App() {
       </header>
 
       {/* Stage */}
-      <main className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-3 gap-6 relative">
+      <main className="max-w-7xl mx-auto p-3 sm:p-6">
+        <div className="overflow-x-auto">
+        <div className="min-w-[700px] grid grid-cols-3 gap-3 sm:gap-6 relative">
           {/* Client */}
           <div className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
             clientAlertFlash
@@ -1147,11 +1148,12 @@ function App() {
             )}
           </AnimatePresence>
         </div>
+        </div>
 
         {/* Legend */}
-        <div className="mt-8 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-xl shadow-lg p-6">
+        <div className="mt-8 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-xl shadow-lg p-4 sm:p-6">
           <h3 className="font-bold text-lg mb-4 text-slate-100 flex items-center gap-2"><BookOpen className="w-5 h-5" /> {t.legend}</h3>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <h4 className="font-semibold text-cyan-400 mb-2 flex items-center gap-1"><Lock className="w-4 h-4" /> {t.scenario1Legend}</h4>
               <p className="text-slate-400">
