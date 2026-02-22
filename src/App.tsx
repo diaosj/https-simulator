@@ -222,14 +222,16 @@ function App() {
     }
   }
 
+  const isHackerActive = centerMessage !== '' && mode === 'http'
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-[#0D1117] text-slate-200">
       {/* Header */}
-      <header className="bg-white shadow-lg p-6">
+      <header className="bg-slate-900/90 backdrop-blur border-b border-slate-700 shadow-lg p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Shield className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+              <Shield className="w-8 h-8 text-cyan-400" />
               HTTPS 安全演示器
             </h1>
             
@@ -263,8 +265,8 @@ function App() {
               }}
               className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
                 scenario === 'encryption'
-                  ? 'bg-blue-600 text-white shadow-lg transform scale-105'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 transform scale-105'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
               }`}
             >
               <Lock className="inline-block w-5 h-5 mr-2" />
@@ -277,8 +279,8 @@ function App() {
               }}
               className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
                 scenario === 'integrity'
-                  ? 'bg-blue-600 text-white shadow-lg transform scale-105'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 transform scale-105'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
               }`}
             >
               <FileCheck className="inline-block w-5 h-5 mr-2" />
@@ -291,8 +293,8 @@ function App() {
               }}
               className={`flex-1 px-6 py-4 rounded-lg font-semibold transition-all ${
                 scenario === 'authentication'
-                  ? 'bg-blue-600 text-white shadow-lg transform scale-105'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 transform scale-105'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600'
               }`}
             >
               <CheckCircle className="inline-block w-5 h-5 mr-2" />
@@ -300,9 +302,9 @@ function App() {
             </button>
           </div>
 
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <strong>{scenarioData[scenario].title}</strong> - {scenarioData[scenario].description}
+          <div className="mt-4 p-4 bg-slate-800/80 border border-slate-700 rounded-lg">
+            <p className="text-sm text-slate-300">
+              <strong className="text-cyan-400">{scenarioData[scenario].title}</strong> - {scenarioData[scenario].description}
             </p>
           </div>
         </div>
@@ -312,20 +314,24 @@ function App() {
       <main className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-3 gap-6 relative">
           {/* Client */}
-          <div className="bg-white rounded-xl shadow-xl p-6">
+          <div className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
+            mode === 'https'
+              ? 'border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+              : 'border border-slate-700'
+          }`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
                 <span className="text-2xl">💻</span>
               </div>
               <div>
-                <h3 className="font-bold text-lg">客户端</h3>
-                <p className="text-sm text-gray-500">用户浏览器</p>
+                <h3 className="font-bold text-lg text-slate-100">客户端</h3>
+                <p className="text-sm text-slate-400">用户浏览器</p>
               </div>
             </div>
 
             {showCertError && (
-              <div className="mb-4 p-4 bg-red-100 border-2 border-red-500 rounded-lg animate-pulse">
-                <div className="flex items-center gap-2 text-red-700 font-bold">
+              <div className="mb-4 p-4 bg-red-900/40 border-2 border-red-500 rounded-lg animate-pulse">
+                <div className="flex items-center gap-2 text-red-400 font-bold">
                   <XCircle className="w-5 h-5" />
                   证书无效，拦截连接！
                 </div>
@@ -338,27 +344,27 @@ function App() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder={scenarioData[scenario].placeholder}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
               />
               <button
                 onClick={handleSend}
                 disabled={isAnimating}
                 className={`w-full py-3 rounded-lg font-bold transition-all ${
                   isAnimating
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                    : 'bg-cyan-600 text-white hover:bg-cyan-500 active:scale-95 shadow-lg shadow-cyan-500/20'
                 }`}
               >
                 {isAnimating ? '发送中...' : '📤 发送'}
               </button>
 
               {mode === 'https' && scenario === 'integrity' && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg text-xs">
-                  <div className="flex items-center gap-2 text-green-700 font-semibold mb-1">
+                <div className="mt-4 p-3 bg-green-900/30 border border-green-700 rounded-lg text-xs">
+                  <div className="flex items-center gap-2 text-green-400 font-semibold mb-1">
                     <FileCheck className="w-4 h-4" />
                     防伪贴 (Hash)
                   </div>
-                  <div className="font-mono break-all text-gray-600">
+                  <div className="font-mono break-all text-green-400">
                     {calculateHash(inputText).substring(0, 32)}...
                   </div>
                 </div>
@@ -366,45 +372,63 @@ function App() {
             </div>
           </div>
 
-          {/* Center - Hacker */}
-          <div className="bg-white rounded-xl shadow-xl p-6 relative">
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                mode === 'http' ? 'bg-red-500' : 'bg-yellow-500'
-              }`}>
-                <Wifi className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">中间人</h3>
-                <p className="text-sm text-gray-500">公共WiFi / 黑客</p>
-              </div>
+          {/* Center - Hacker (Terminal Style) */}
+          <div className={`bg-black rounded-xl p-0 relative overflow-hidden transition-all duration-300 ${
+            isHackerActive
+              ? 'border border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]'
+              : 'border border-slate-700'
+          }`}>
+            {/* Terminal Title Bar */}
+            <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/80 border-b border-slate-700">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500" />
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <span className="ml-2 text-xs text-slate-400 font-mono">hacker@mitm:~</span>
             </div>
 
-            <div className="min-h-[200px] flex items-center justify-center">
-              {centerMessage ? (
-                <div className={`p-4 rounded-lg text-center ${
-                  mode === 'http' ? 'bg-red-100 border-2 border-red-500' : 'bg-yellow-100 border-2 border-yellow-500'
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  mode === 'http' ? 'bg-red-600' : 'bg-yellow-600'
                 }`}>
-                  <p className="text-sm font-semibold whitespace-pre-line">{centerMessage}</p>
+                  <Wifi className="w-6 h-6 text-white" />
                 </div>
-              ) : (
-                <div className="text-gray-400 text-center">
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
-                  <p className="text-sm">监听中...</p>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-100">中间人</h3>
+                  <p className="text-sm text-slate-500">公共WiFi / 黑客</p>
                 </div>
-              )}
+              </div>
+
+              <div className="min-h-[200px] flex items-center justify-center">
+                {centerMessage ? (
+                  <div className={`p-4 rounded-lg text-center font-mono ${
+                    mode === 'http' ? 'bg-red-900/30 border border-red-500/60' : 'bg-yellow-900/20 border border-yellow-500/40'
+                  }`}>
+                    <p className="text-sm font-semibold whitespace-pre-line text-green-400">{centerMessage}</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-2 text-green-500/40" />
+                    <p className="text-sm font-mono text-green-400/60">$ listening...</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Server */}
-          <div className="bg-white rounded-xl shadow-xl p-6">
+          <div className={`bg-slate-900/80 backdrop-blur rounded-xl p-6 transition-all duration-300 ${
+            mode === 'https'
+              ? 'border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+              : 'border border-slate-700'
+          }`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
                 <span className="text-2xl">🏦</span>
               </div>
               <div>
-                <h3 className="font-bold text-lg">服务器</h3>
-                <p className="text-sm text-gray-500">银行 / 网站</p>
+                <h3 className="font-bold text-lg text-slate-100">服务器</h3>
+                <p className="text-sm text-slate-400">银行 / 网站</p>
               </div>
             </div>
 
@@ -412,15 +436,15 @@ function App() {
               {serverMessage ? (
                 <div className={`p-4 rounded-lg ${
                   serverMessage.includes('❌') || serverMessage.includes('🚫')
-                    ? 'bg-red-100 border-2 border-red-500'
+                    ? 'bg-red-900/30 border border-red-500/60'
                     : serverMessage.includes('😴')
-                    ? 'bg-gray-100 border-2 border-gray-400'
-                    : 'bg-green-100 border-2 border-green-500'
+                    ? 'bg-slate-800 border border-slate-600'
+                    : 'bg-green-900/30 border border-green-500/60'
                 }`}>
-                  <p className="text-sm font-semibold whitespace-pre-line">{serverMessage}</p>
+                  <p className="text-sm font-semibold whitespace-pre-line text-slate-200">{serverMessage}</p>
                 </div>
               ) : (
-                <div className="text-gray-400 text-center">
+                <div className="text-slate-500 text-center">
                   <Shield className="w-12 h-12 mx-auto mb-2" />
                   <p className="text-sm">等待数据...</p>
                 </div>
@@ -440,10 +464,10 @@ function App() {
               >
                 <div className={`px-6 py-4 rounded-lg shadow-2xl transform -translate-y-1/2 ${
                   packet.tampered
-                    ? 'bg-red-500 text-white'
+                    ? 'bg-red-600 text-white shadow-red-500/50'
                     : packet.encrypted
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-blue-500 text-white'
+                    ? 'bg-purple-600 text-white shadow-purple-500/50'
+                    : 'bg-blue-600 text-white shadow-blue-500/50'
                 }`}>
                   <div className="font-bold text-sm mb-1">📦 数据包</div>
                   <div className="text-xs font-mono break-all max-w-[150px]">
@@ -461,28 +485,28 @@ function App() {
         </div>
 
         {/* Legend */}
-        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-          <h3 className="font-bold text-lg mb-4">📚 说明</h3>
+        <div className="mt-8 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-xl shadow-lg p-6">
+          <h3 className="font-bold text-lg mb-4 text-slate-100">📚 说明</h3>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <h4 className="font-semibold text-blue-600 mb-2">🔐 场景 1: 加密</h4>
-              <p className="text-gray-600">
-                <strong>HTTP:</strong> 明文传输，黑客能看到所有内容<br />
-                <strong>HTTPS:</strong> AES加密，黑客只能看到乱码
+              <h4 className="font-semibold text-cyan-400 mb-2">🔐 场景 1: 加密</h4>
+              <p className="text-slate-400">
+                <strong className="text-slate-300">HTTP:</strong> 明文传输，黑客能看到所有内容<br />
+                <strong className="text-slate-300">HTTPS:</strong> AES加密，黑客只能看到乱码
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-blue-600 mb-2">🛡️ 场景 2: 完整性</h4>
-              <p className="text-gray-600">
-                <strong>HTTP:</strong> 数据可被篡改，服务器无法察觉<br />
-                <strong>HTTPS:</strong> SHA-256 Hash校验，篡改立即被发现
+              <h4 className="font-semibold text-cyan-400 mb-2">🛡️ 场景 2: 完整性</h4>
+              <p className="text-slate-400">
+                <strong className="text-slate-300">HTTP:</strong> 数据可被篡改，服务器无法察觉<br />
+                <strong className="text-slate-300">HTTPS:</strong> SHA-256 Hash校验，篡改立即被发现
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-blue-600 mb-2">✅ 场景 3: 验证</h4>
-              <p className="text-gray-600">
-                <strong>HTTP:</strong> 黑客可假冒服务器截获数据<br />
-                <strong>HTTPS:</strong> CA证书验证，假冒立即被识破
+              <h4 className="font-semibold text-cyan-400 mb-2">✅ 场景 3: 验证</h4>
+              <p className="text-slate-400">
+                <strong className="text-slate-300">HTTP:</strong> 黑客可假冒服务器截获数据<br />
+                <strong className="text-slate-300">HTTPS:</strong> CA证书验证，假冒立即被识破
               </p>
             </div>
           </div>
