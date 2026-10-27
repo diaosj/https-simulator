@@ -30,8 +30,8 @@
 No backend required, no deployment needed — just open your browser and experience a visual showcase of **information security attack and defense**. Watch firsthand how a Man-in-the-Middle (MITM) launches attacks, and how modern cryptographic mechanisms defeat them one by one.
 
 <p align="center">
-  <!-- Place a project demo GIF / video screenshot here. Update the path below once an asset is available. -->
-  <!-- <img src="path/to/demo.gif" alt="HTTPS Visual Simulator Demo" width="800" /> -->
+  <a href="https://https-simulator.vercel.app"><img src="docs/screenshot.jpg" alt="HTTPS Visual Simulator: client, man-in-the-middle terminal and server" width="800" /></a>
+  <br /><sub>Live: <a href="https://https-simulator.vercel.app">https-simulator.vercel.app</a></sub>
 </p>
 
 ---
