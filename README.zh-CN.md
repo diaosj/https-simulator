@@ -30,8 +30,8 @@
 无需后端，无需部署，打开浏览器即可体验一场关于**信息安全攻防**的视觉盛宴。你将亲眼看到中间人（MITM）如何发起攻击，又是如何被现代密码学机制逐一击溃。
 
 <p align="center">
-  <!-- 👇 请在此处放置项目演示动图（GIF / 视频截图），添加素材后将下方示例替换为实际路径 -->
-  <!-- <img src="path/to/demo.gif" alt="HTTPS Visual Simulator 演示动图" width="800" /> -->
+  <a href="https://https-simulator.vercel.app"><img src="docs/screenshot.jpg" alt="HTTPS Visual Simulator 界面：客户端、中间人终端、服务器" width="800" /></a>
+  <br /><sub>在线体验：<a href="https://https-simulator.vercel.app">https-simulator.vercel.app</a></sub>
 </p>
 
 ---
